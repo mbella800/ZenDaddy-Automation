@@ -18,9 +18,9 @@ import TrustBadges from '@/components/TrustBadges';
 import CustomScriptsPromo from '@/components/CustomScriptsPromo';
 import HowItWorks from '@/components/HowItWorks';
 
-function HomeContent() {
+function HomeContent({ overrideQuery }: { overrideQuery?: string }) {
   const searchParams = useSearchParams();
-  const query = searchParams.get('q') || 'Best Fortnite Aim Assist 2026';
+  const query = overrideQuery || searchParams.get('q') || 'Best Fortnite Aim Assist 2026';
 
   const structuredData = {
     '@context': 'https://schema.org',
@@ -97,10 +97,10 @@ function HomeContent() {
   );
 }
 
-export default function Home() {
+export default function Home({ overrideQuery }: { overrideQuery?: string }) {
   return (
     <Suspense fallback={null}>
-      <HomeContent />
+      <HomeContent overrideQuery={overrideQuery} />
     </Suspense>
   );
 }
