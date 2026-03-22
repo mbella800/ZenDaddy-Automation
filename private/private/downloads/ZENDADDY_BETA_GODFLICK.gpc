@@ -1,0 +1,254 @@
+// ===================================================================================
+//  ZENDADDY v28 - CLIENT PROFILE: LINEAR | DEADZONE 5 (0.05)
+//  Adjusted for High Sensitivity Input & Low Deadzone
+// ===================================================================================
+
+// --- 1. DEADZONE & SYSTEM ---
+// AANGEPAST: Deadzone naar 5 (voor 0.05 setting)
+define GAME_DEADZONE     = 5;    
+define POLLING_MS        = 1;
+
+// --- 2. LEFT STICK ENGINE (AANGEPAST VOOR DZ 5) ---
+// Omdat de deadzone laag is, moeten deze getallen omlaag om drift te voorkomen.
+
+// Was 15. Nu 7 (voorkomt dat hij uit zichzelf loopt)
+define RAA_BASE_MAG      = 7;    
+// Was 19. Nu 12 (voorkomt trillen van vizier)
+define RAA_ADS_MAG       = 12;   
+// Boost tijdens flick
+define RAA_FLICK_MAG     = 30;   
+// Snelheid iets verhoogd voor Linear (gladder gevoel)
+define HELIX_SPEED       = 10;   
+
+// --- 3. PULSE ENGINE ---
+// Was 18. Nu 14 (subtieler voor linear)
+define PULSE_MAG         = 14;   
+define PULSE_SPEED       = 2;
+
+// --- 4. RIGHT STICK DAMPENING (STICKY AIM) ---
+// AANGEPAST: Iets minder agressief voor Linear spelers
+
+// Hipfire vertraging
+define DECEL_HIP         = 75;   
+// Was 55. Nu 60 (Iets minder stroperig, beter voor micro-correcties op linear)
+define DECEL_ADS         = 60;   
+// Tracking
+define DECEL_ADS_FAST    = 85;   
+// Flicking
+define DECEL_FLICK       = 90;   
+// Brake
+define DECEL_STOP        = 65;   
+
+// --- 5. THRESHOLDS ---
+define FLICK_VELOCITY    = 70;
+define STOP_VELOCITY     = 20;   
+define TRACK_VELOCITY    = 35;
+define IDLE_TIMEOUT      = 500;
+
+// --- GLOBALS ---
+int script_enabled = 1;
+int idle_watchdog = 0;
+
+// Velocity Tracking
+int prev_rx = 0;
+int prev_ry = 0;
+int velocity_rs = 0;
+
+// Helix Engine
+int helix_angle = 0;
+int raa_x = 0;
+int raa_y = 0;
+int current_raa_mag = 0;
+
+// Pulse Engine
+int pulse_timer = 0;
+int pulse_state = 0;
+int pulse_x = 0;
+int pulse_y = 0;
+
+// Dampening Logic
+int decel_factor = 100;
+int was_flicking = 0;
+int map_timer = 0;
+
+// Inputs
+int rx = 0;
+int ry = 0;
+int lx = 0;
+int ly = 0;
+
+// Logic Flags
+int ads_on = 0;
+int fire_on = 0;
+
+// Helpers
+int t_ang = 0;
+int sign = 0;
+int c_val = 0;
+int slope = 0;
+int output = 0;
+
+// LED Colors
+define Green = 1;
+define Red   = 2;
+define Blue  = 3;
+define Pink  = 4; 
+
+init {
+    ColorLED(Green);
+}
+
+main {
+    // 0. MAP BUTTON FIX (OPTIONS + L3)
+    if (get_val(PS4_OPTIONS)) {
+        if (event_press(PS4_L3)) {
+            map_timer = 150;
+        }
+    }
+
+    if (map_timer > 0) {
+        set_val(PS4_TOUCH, 100); 
+        set_val(PS4_L3, 0);
+        map_timer = map_timer - get_rtime();
+    }
+
+    // 1. TOGGLE SYSTEM (R1 + Dpad Up/Down)
+    if (get_val(PS4_R1)) {
+        if (event_press(PS4_UP)) {
+            script_enabled = 1;
+            ColorLED(Green);
+        }
+        if (event_press(PS4_DOWN)) {
+            script_enabled = 0;
+            ColorLED(Red);
+        }
+    }
+
+    if (script_enabled) {
+        // Read Inputs
+        rx = get_val(PS4_RX);
+        ry = get_val(PS4_RY);
+        lx = get_val(PS4_LX);
+        ly = get_val(PS4_LY);
+
+        ads_on = (get_val(PS4_L2) > 50);
+        fire_on = (get_val(PS4_R2) > 50);
+
+        // --- VELOCITY ENGINE ---
+        velocity_rs = (abs(rx - prev_rx) + abs(ry - prev_ry)) * 2 + (abs(rx) + abs(ry))/3;
+        prev_rx = rx;
+        prev_ry = ry;
+        if (velocity_rs > 100) { velocity_rs = 100;
+        }
+
+        // --- LOGIC STATE MACHINE ---
+        current_raa_mag = RAA_BASE_MAG;
+        decel_factor = DECEL_HIP;
+        
+        if (ads_on) {
+            current_raa_mag = RAA_ADS_MAG;
+            // DYNAMIC ADS LOGIC
+            if (velocity_rs > TRACK_VELOCITY) {
+                decel_factor = DECEL_ADS_FAST;
+            } else {
+                decel_factor = DECEL_ADS;
+            }
+        } 
+
+        // FLICK LOGIC (Overrides ADS Logic if flick is detected)
+        if (velocity_rs > FLICK_VELOCITY) {
+            was_flicking = 1;
+            decel_factor = DECEL_FLICK; 
+            current_raa_mag = RAA_FLICK_MAG;
+        } else if (was_flicking) {
+             if (velocity_rs < STOP_VELOCITY) {
+                 decel_factor = DECEL_STOP;
+                 if (velocity_rs < 5) { was_flicking = 0; } 
+             }
+        }
+
+        // --- LEFT STICK ENGINE 1: HELIX ---
+        if (ads_on || fire_on || abs(lx) > 10 || abs(ly) > 10 || velocity_rs > 10) {
+            helix_angle = (helix_angle + HELIX_SPEED) % 360;
+            raa_x = (current_raa_mag * get_cosine(helix_angle)) / 100;
+            raa_y = (current_raa_mag * get_sine(helix_angle)) / 120;
+        } else {
+            raa_x = 0; raa_y = 0;
+        }
+
+        // --- LEFT STICK ENGINE 2: TURBO PULSE ---
+        if (fire_on || velocity_rs > 40) {
+            pulse_timer = pulse_timer + get_rtime();
+            if (pulse_timer >= PULSE_SPEED) {
+                pulse_timer = 0;
+                pulse_state = !pulse_state;
+            }
+            
+            if (pulse_state) {
+                pulse_x = PULSE_MAG;
+                pulse_y = inv(PULSE_MAG);
+            } else {
+                pulse_x = inv(PULSE_MAG);
+                pulse_y = PULSE_MAG;
+            }
+        } else {
+            pulse_x = 0;
+            pulse_y = 0;
+        }
+
+        // --- COMBINE ENGINES ---
+        if (abs(lx) < 90 && abs(ly) < 90) { 
+            // Fix: Ensure we don't apply shake if stick is at rest (Prevent walking)
+            lx = lx + raa_x + pulse_x;
+            ly = ly + raa_y + pulse_y;
+            
+            set_val(PS4_LX, DeadzoneInverse(lx, GAME_DEADZONE));
+            set_val(PS4_LY, DeadzoneInverse(ly, GAME_DEADZONE));
+        }
+
+        // --- RIGHT STICK DAMPENER ---
+        if (abs(rx) > 5 || abs(ry) > 5) {
+            rx = (rx * decel_factor) / 100;
+            ry = (ry * decel_factor) / 100;
+            
+            set_val(PS4_RX, DeadzoneInverse(rx, GAME_DEADZONE));
+            set_val(PS4_RY, DeadzoneInverse(ry, GAME_DEADZONE));
+        }
+    }
+}
+
+// --- CORE FUNCTIONS ---
+function DeadzoneInverse(val, dz) {
+    if (abs(val) < 1) return 0;
+    slope = 100 - dz;
+    output = (abs(val) * slope) / 100 + dz;
+    if (val < 0) return inv(output);
+    return output;
+}
+
+function get_cosine(angle_input) {
+    angle_input = angle_input % 360;
+    if(angle_input < 0) angle_input = angle_input + 360;
+    t_ang = angle_input; sign = 1;
+    if (t_ang >= 270) { t_ang = 360 - t_ang;
+    } 
+    else if (t_ang >= 180) { t_ang = t_ang - 180; sign = -1;
+    } 
+    else if (t_ang >= 90) { t_ang = 180 - t_ang; sign = -1;
+    } 
+    c_val = 100 - (t_ang * t_ang) / 81;
+    return c_val * sign;
+}
+
+function get_sine(angle_input) { return get_cosine(angle_input - 90); }
+
+function ColorLED(Color) {
+    if (Color == Green) { set_led(LED_1, 0);
+        set_led(LED_2, 0); set_led(LED_3, 1); set_led(LED_4, 0); }
+    else if (Color == Red) { set_led(LED_1, 0); set_led(LED_2, 1);
+        set_led(LED_3, 0); set_led(LED_4, 0); }
+    else if (Color == Blue) { set_led(LED_1, 1); set_led(LED_2, 0); set_led(LED_3, 0);
+        set_led(LED_4, 0); }
+    else if (Color == Pink) { set_led(LED_1, 0); set_led(LED_2, 0); set_led(LED_3, 0); set_led(LED_4, 1);
+    }
+}

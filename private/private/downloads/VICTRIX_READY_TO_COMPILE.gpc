@@ -1,0 +1,3591 @@
+//////////////////////////////////////////////////////////////////////
+//  ZENDADDY MAGNETIC AIM v2.0 - VICTRIX PRO BFG                  //
+//    FINAL BUILD - GEEN SPVAR/LED DEFINES - DIRECT COMPILEREN    //
+//    BUILD: 16-OCT-2025 14:25 - NIEUWE BESTANDSNAAM              //
+//////////////////////////////////////////////////////////////////////
+
+// ===================== CONTROLS ======================
+define BTN_ADS        = PS4_L2;
+define BTN_SHOOT      = PS4_R2;
+define BTN_JUMP       = PS4_CROSS;
+define BTN_TOGGLE     = PS4_OPTIONS;
+define BTN_MENU_OPEN  = PS4_L2;
+define BTN_MENU_KEY   = PS4_OPTIONS;
+define BTN_MENU_CLOSE = PS4_CIRCLE;
+define BTN_LEFT       = PS4_LEFT;
+define BTN_RIGHT      = PS4_RIGHT;
+define BTN_UP         = PS4_UP;
+define BTN_DOWN       = PS4_DOWN;
+define BTN_BUILD      = PS4_CIRCLE;
+define BTN_RESET      = PS4_R3;
+define BTN_CONFIRM    = PS4_R2;
+define AXIS_RX     = PS4_RX;
+define AXIS_RY     = PS4_RY;
+define LX          = PS4_LX;
+define LY          = PS4_LY;
+
+define DIAG_BUFFER_SIZE        = 64;
+define DIAG_CAPTURE_INTERVAL   = 50;
+define SUBSYSTEM_SLOWDOWN      = 0x01;
+define SUBSYSTEM_ROTATION      = 0x02;
+define SUBSYSTEM_SNAP          = 0x04;
+define SUBSYSTEM_RESISTANCE    = 0x08;
+define SUBSYSTEM_ALL           = SUBSYSTEM_SLOWDOWN | SUBSYSTEM_ROTATION | SUBSYSTEM_SNAP | SUBSYSTEM_RESISTANCE;
+
+define HIP_STICKY_WINDOW_MS        = 240;
+define HIP_STICKY_CANCEL_VELOCITY  = 220;
+define HIP_STICKY_INTENSITY_BASE   = 65;
+define HIP_STICKY_SLOWDOWN_TARGET  = 48;
+define HIP_STICKY_ROTATION_BONUS   = 18;
+define HIP_STICKY_SNAP_BONUS       = 22;
+define HIP_STICKY_RESIST_GAIN      = 28;
+
+define ROTATION_JITTER_MAX_MS      = 25;
+define ROTATION_MAG_JITTER         = 1;
+define ROTATION_FREQ_SLOW_LOCK     = 110;
+define ROTATION_FREQ_FAST_LOCK     = 55;
+define ORBIT_SPEED_GAIN            = 6;
+define ORBIT_SPEED_MIN             = 1;
+define ORBIT_SPEED_MAX             = 4;
+
+// ========== SCREEN-SPACE CONVERSION ===========
+define SCREEN_WIDTH   = 1920;
+define SCREEN_HEIGHT  = 1080;
+define HFOV           = 80;
+
+ // ========== SCREEN-SPACE BUBBLE ZONES (ENHANCED STICKY MODE!) ===========
+ // Bubble radii are seeded during `init` via `bubble_zone_edges` defaults and then
+ // refined every frame by `update_bubble_state()` using slider margins and hysteresis,
+ // so no static table lives here—the logic below drives the adaptive values.
+ 
+ 
+ 
+int bubble_zone_edges[5];
+
+// ========== SLOWDOWN MECHANICS (SUPER STICKY MAGNETIC!) ===========
+// MAGNETIC slowdown - extreme sticky gevoel met perfecte controle!
+define SLOWDOWN_ULTRA  = 45;   // 55% slowdown - super magnetic!
+define SLOWDOWN_CLOSE  = 50;   // 50% slowdown - super sticky!
+define SLOWDOWN_MEDIUM = 60;   // 40% slowdown - enhanced stick!
+define SLOWDOWN_FAR    = 70;   // 30% slowdown - stronger magnetic!
+define SLOWDOWN_OUTER  = 80;   // 20% slowdown - enhanced magnetic!
+define ADS_SLOWDOWN_FACTOR = 75;  // 25% extra slowdown bij ADS
+
+// =========== ROTATION PULL (ENHANCED STICKY - LOWERED GATE!) ================
+// v3.0 SUPER STICKY - veel sterker met perfecte controle!
+// HIPFIRE: aggressievere pull voor instant sticky aim
+define ROTATION_PULL_HIP_ULTRA  = 7;    // v3.0: 40% sterker dan v2.0.5
+define ROTATION_PULL_HIP_CLOSE  = 10;   // v3.0: 37% sterker dan v2.0.5
+define ROTATION_PULL_HIP_MEDIUM = 14;   // v3.0: 40% sterker dan v2.0.5
+define ROTATION_PULL_HIP_FAR    = 20;   // v3.0: 35% sterker dan v2.0.5
+
+// ADS: sterkere pull voor perfect sticky tracking
+define ROTATION_PULL_ADS_ULTRA  = 4;    // v3.0: 42% sterker dan v2.0.5
+define ROTATION_PULL_ADS_CLOSE  = 6;    // v3.0: 40% sterker dan v2.0.5
+define ROTATION_PULL_ADS_MEDIUM = 9;    // v3.0: 44% sterker dan v2.0.5
+define ROTATION_PULL_ADS_FAR    = 13;   // v3.0: 41% sterker dan v2.0.5
+int slowdown_zone_map[5];
+int rotation_pull_hip_map[4];
+int rotation_pull_ads_map[4];
+
+define ROTATION_STRAFE_GATE = 5;    // VERLAAGD! Minimale beweging voor rotation
+
+// ============ v3.0 ENHANCED MAGNETISM (Super Sticky Camera Control!) ====================
+define CURVE_BLEND_ENABLE   = 1;    // Enable zone interpolation
+define IDLE_AUTO_PULL_TIME  = 80;   // VEEL SNELLER! 47% sneller dan v2.0
+define MOVEMENT_GATE_TIME   = 120;  // VEEL SNELLER! 40% sneller dan v2.0
+define AUTO_PULL_STRENGTH   = 10;   // 67% STERKER voor instant sticky! (was 6 units)
+
+// ============ SNAP-TO-TARGET (v3.0 SUPER STICKY MODE!) ====================
+// Aggressive snap voor instant sticky aim (PERFECTE MAGNETISM!)
+define SNAP_STRENGTH_ULTRA  = 90;   // SUPER STICKY: 29% sterker! (was 70)
+define SNAP_STRENGTH_CLOSE  = 70;   // SUPER STICKY: 40% sterker! (was 50)
+define SNAP_STRENGTH_MEDIUM = 50;   // SUPER STICKY: 43% sterker! (was 35)
+define SNAP_MIN_LOCK        = 8;    // ZEER VROEG actief (33% sneller!)
+define SNAP_INSTANT_FLICK   = 1;    // AAN voor instant snap (shotgun flicks!)
+define SNAP_RAMP_TIME       = 50;   // ULTRA SNELLE ramp-up! (38% sneller!)
+
+// ZENDADDY Logo - 120x64 pixels
+const int16 zendaddy_logo[] = {120, 64,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xE0FF, 0xFFFC, 0x7FFF, 0xFFFF, 0xFFFF, 0xE03F,
+    0xFFFF, 0xE000, 0x3FF8, 0x0007, 0x8020, 0x0600, 0x8000, 0x0FFF,
+    0xFFCF, 0xFE00, 0x01CF, 0xF1BF, 0x8FF0, 0xFE1F, 0x8F8F, 0xFFFF,
+    0xCFFE, 0xFF79, 0xCFFC, 0x3F8F, 0xFCFF, 0x9F9F, 0x8FFF, 0xFFCF,
+    0xFEFE, 0x79CF, 0xFE3F, 0x8FFE, 0xFFCF, 0x9F0F, 0xFFFF, 0xCFFE,
+    0xFF79, 0xEFBF, 0x3F8F, 0xFEFF, 0xEF9F, 0x1FFF, 0xFFC8, 0x3EF0,
+    0xFDEF, 0x9F3F, 0xCF9E, 0xF9EF, 0xBE1F, 0xFFFF, 0xE07C, 0xF0FD,
+    0xEF9F, 0x7FCF, 0x9FF9, 0xF7FE, 0x3FFF, 0xFFF0, 0xFCF0, 0xFFEF,
+    0x9F7B, 0xCF9F, 0xF9F7, 0xFC3F, 0xFFFF, 0xFCF8, 0xFEFF, 0xEF9F,
+    0x7BCF, 0x9FF9, 0xF3FC, 0x7FFF, 0xFFF9, 0xF0FE, 0xFFEF, 0x9F7B,
+    0xCF9F, 0xF9F3, 0xF87F, 0xFFFF, 0xF3E0, 0xFEFF, 0xEF9F, 0x7BCF,
+    0x9FF9, 0xF3F8, 0xFFFF, 0xFFE7, 0xE0F0, 0xF7EF, 0x9F7F, 0xEF9E,
+    0xF9F1, 0xF0FF, 0xFFFF, 0xE7C0, 0xF0F3, 0xEFBF, 0xFFEF, 0xBEF9,
+    0xE1F1, 0xFFFF, 0xFFCF, 0xFEFF, 0x73EF, 0xFEFF, 0xEFFE, 0xFFE1,
+    0xF1FF, 0xFFFF, 0xCFFE, 0xFF73, 0xEFFC, 0xF1EF, 0xFCFF, 0xC1F1,
+    0xFFFF, 0xFFCF, 0xFEFF, 0x71EF, 0xF8F1, 0xEFF0, 0xFF81, 0xF1FF,
+    0xFFFF, 0xCFFE, 0x0000, 0x0000, 0x0000, 0x0000, 0x01F1, 0xFFFF,
+    0xFFC0, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x01FF, 0xFFFF,
+    0xF000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001, 0xFFFF, 0xFFFF,
+    0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x03FF, 0xFFFF, 0xFF03,
+    0x03C0, 0x007C, 0x7C7F, 0x30F1, 0xC60F, 0xFFFF, 0xFFFF, 0x0307,
+    0xE000, 0xFE7F, 0x7F33, 0xF9C6, 0x0FFF, 0xFFFF, 0xFF03, 0x0E60,
+    0xE0EE, 0x771C, 0x339D, 0xE60F, 0xFFFF, 0xFFFF, 0x030E, 0x60E1,
+    0xC763, 0x1C33, 0x1DE6, 0x0FFF, 0xFFFF, 0xFF03, 0x00E7, 0xFDC7,
+    0x771C, 0x331D, 0xFE0F, 0xFFFF, 0xFFFF, 0x0301, 0xC3F9, 0xC77E,
+    0x1C33, 0x1DFE, 0x0FFF, 0xFFFF, 0xFF03, 0x0780, 0xE0C6, 0x781C,
+    0x339D, 0xDE0F, 0xFFFF, 0xFFFF, 0x03EF, 0xE060, 0xFE60, 0x1C33,
+    0xF9CE, 0x0FFF, 0xFFFF, 0xFF03, 0xE7E0, 0x0078, 0x600C, 0x30F0,
+    0x0E0F, 0xFFFF, 0xFFFF, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+    0x0FFF, 0xFFFF, 0xFF00, 0x0000, 0x0000, 0x0000, 0x0000, 0x000F,
+    0xFFFF, 0xFFFF, 0x8000, 0x0000, 0x0000, 0x0000, 0x0000, 0x1FFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+    0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF
+};
+
+// ============ ASSIST AMPLIFICATION (V3.0 SUPER STICKY MODE!) ====================
+// PERFECT SAMENWERKING met Fortnite's aim assist - ENHANCED rotational assist!
+define ASSIST_ENGAGE_MIN          = 30;    // 40% LAGER voor vroegere activation! (was 50)
+define MICRO_ORBIT_BASE           = 6;     // VERLAAGD voor subtielere maar effectievere orbit (was 10)
+define MICRO_ORBIT_MAX            = 12;    // VERLAAGD voor betere samenwerking met Fortnite (was 20)
+define VELOCITY_FOLLOW_STRENGTH   = 50;    // 43% VERHOOGD voor betere tracking! (was 35)
+define VERTICAL_CLAMP_MAX         = 6;     // VERLAAGD om ground-pull te voorkomen (was 8)
+define ASSIST_DECAY_MS            = 150;   // 88% VERHOOGD voor langere sticky na bubble exit (was 80)
+
+// ========== MICRO SEARCH ======
+define MICRO_RADIUS_SEARCH  = 0;    // UIT - natuurlijk!
+define MICRO_SPEED_SEARCH   = 0;    // UIT - natuurlijk!
+define MICRO_ACTIVE_THRESH  = 8;
+
+// ================ BUBBLE ZONES ===================
+define BUBBLE_ULTRA_CLOSE  = 15;
+define BUBBLE_CLOSE        = 30;
+define BUBBLE_MEDIUM       = 50;
+define BUBBLE_FAR          = 80;
+define BUBBLE_OUTER        = 120;
+define BUBBLE_ZONE_ULTRA   = BUBBLE_ULTRA_CLOSE;
+define BUBBLE_ZONE_CLOSE   = BUBBLE_CLOSE;
+define BUBBLE_ZONE_MID     = BUBBLE_MEDIUM;
+define BUBBLE_ZONE_FAR     = BUBBLE_FAR;
+define BUBBLE_ZONE_OUTER   = BUBBLE_OUTER;
+
+// ================ TARGET LOCKING ===================
+define LOCK_THRESHOLD       = 40;   // Lock ENABLE threshold
+define LOCK_THRESHOLD_LOW   = 30;   // Lock DISABLE threshold (hysteresis!)
+define LOCK_THRESHOLD_HIGH  = 70;   // Lock DISABLE on overshoot
+define LOCK_TIMER_MIN       = 3;
+define LOCK_TIMER_STABLE   = 10;
+define LOCK_TIMER_MAX      = 30;
+define LOCK_BREAK_THRESHOLD = 75;   // Break lock on overshoot
+define LOCK_STRENGTH_SLOWDOWN = 85; // Min lock strength for SLOWDOWN (zeer hoog!)
+define LOCK_STRENGTH_ROTATION = 80; // Min lock strength for ROTATION (zeer hoog!)
+
+// =============== STRAFE DETECTION ==================
+define STRAFE_THRESHOLD    = 15;
+define STRAFE_BOOST_MIN    = 120;
+define STRAFE_BOOST_MEDIUM = 150;
+define STRAFE_BOOST_MAX    = 200;
+
+// ============== TRICKSHOT / AERIAL ===============
+define AERIAL_THRESHOLD   = 200;
+define SNIPER_DELAY       = 200;
+
+// ============== WEAPON DETECTION =================
+define WEAPON_SHOTGUN_TIME = 800;   // MS tussen shotgun shots
+define WEAPON_SNIPER_TIME  = 1200;  // MS tussen sniper shots
+define WEAPON_AR_TIME      = 150;   // MS tussen AR shots
+define WEAPON_QUICK_SCOPE  = 400;   // MS voor quickscope detect
+
+// ============== FLICKSHOT DETECTION ==============
+define FLICK_THRESHOLD     = 60;    // Input jump voor flick detect
+define FLICK_WINDOW        = 150;   // MS window voor flick
+define SUPER_FLICK_THRESHOLD = 90;  // 360-degree super flick (instant disable ALL!)
+define SUPER_FLICK_WINDOW    = 80;  // Shorter window for 360 detection
+
+// ============== HYPER-BURST MODE (ONE-SHOT!) ==============
+define HYPER_BURST_DURATION  = 120;   // MS hyper lock voor one-shots
+define HYPER_BURST_SLOWDOWN  = 5;     // 95% reduction!
+define HYPER_BURST_ROTATION  = 50;    // 50px/frame max!
+define HYPER_BURST_SNAP      = 60;    // 60px instant snap!
+define HYPER_BUBBLE_MULTI    = 200;   // 2x bubble size
+
+// ============== PREDICTIVE LAZY AIM ==============
+define LAZY_AIM_PREDICT_MS   = 100;   // Predict 100ms ahead
+define LAZY_AIM_BIAS         = 25;    // 25% bias naar prediction
+define LAZY_AIM_MIN_LOCK     = 60;    // Min lock strength voor lazy aim
+
+// ============== DAMPING & SMOOTHING ==============
+define DAMPING_THRESHOLD   = 8;     // Pixels voor zero-crossing damping
+define DAMPING_FACTOR      = 55;    // 45% extra damping near center
+
+// ============== ROTATION TRIGGER PULSE (MAGNETIC!) ==============
+define ROTATION_PULSE_DURATION    = 60;    // ms burst length
+define ROTATION_PULSE_GAP         = 140;   // ms between pulses (ADS baseline)
+define ROTATION_PULSE_GAP_HIPFIRE = 280;   // ms for hipfire (DUBBEL - 50% minder frequent!)
+define ROTATION_PULSE_BASE        = 1;     // Base units
+define ROTATION_PULSE_MAX         = 3;     // Max units
+define ROTATION_PULSE_LOCK_MIN    = 70;    // Minimum lock strength
+
+// ============== PHASE F: SAFETY & ANTI-DETECTION ==============
+define STEALTH_IDLE_JITTER      = 15;   // Max +/- 15ms for idle timer
+define STEALTH_MOVEMENT_JITTER  = 20;   // Max +/- 20ms for movement timer
+
+// ============== STICK RESISTANCE (SUPER STICKY TARGET LOCK!) ==============
+define STICK_RESISTANCE_THRESHOLD     = 25;   // 67% GROTERE bubble! (was 15px)
+define STICK_RESISTANCE_MAX           = 12;   // 300% STERKER! Perfect sticky gevoel!
+
+// Input-speed adaptive thresholds (VERHOOGD VOOR SUPER STICKY!)
+// ENABLE thresholds (script becomes active)
+define INPUT_VELOCITY_ENABLE_HIP  = 25;   // 67% HOGER voor betere sticky! (was 15)
+define INPUT_VELOCITY_ENABLE_ADS  = 35;   // 75% HOGER voor perfecte ADS control! (was 20)
+// DISABLE thresholds (script deactivates) - VERHOOGD voor sticky aim!
+define INPUT_VELOCITY_DISABLE_HIP = 15;   // 88% HOGER voor stabiele sticky! (was 8)
+define INPUT_VELOCITY_DISABLE_ADS = 25;   // 108% HOGER voor super sticky ADS! (was 12)
+// FAST movement overrides - VERHOOGD voor betere stick zonder verlies van flicks
+define INPUT_VELOCITY_FAST_HIP    = 85;   // 31% HOGER voor sticky tijdens snelle beweging! (was 65)
+define INPUT_VELOCITY_FAST_ADS    = 90;   // 29% HOGER voor sticky tijdens ADS tracking! (was 70)
+define INPUT_VELOCITY_PANIC       = 120;  // 50% HOGER - alleen uitschakelen bij extreme flicks! (was 80)
+
+define FREEDOM_RELEASE_THRESHOLD  = 55;   // Drempel voor volledige bewegingsvrijheid
+define FREEDOM_RELEASE_RECOVER    = 220;  // Herstelduur na snelle beweging (ms)
+define FREEDOM_RELEASE_SLOWDOWN   = 70;   // Percentage naar 100% slowdown bij freedom release
+define FREEDOM_RELEASE_ROTATION   = 60;   // Rotatieblend reductie bij freedom release
+define FREEDOM_RELEASE_SNAP       = 65;   // Snapblend reductie bij freedom release
+
+define STICKY_EDGE_MARGIN         = 8;    // Pixels rondom bubble edge voor extra magnetism
+define STICKY_EDGE_GAIN           = 25;   // Slowdown/rotation boost bij sticky edge
+define STICKY_EDGE_SNAP_GAIN      = 18;   // Snap boost bij sticky edge
+
+define BUBBLE_ENABLE_MARGIN       = 4;    // Binnenwaartse marge voor zone activatie
+define BUBBLE_DISABLE_MARGIN      = 6;    // Buitenwaartse marge voor zone deactivatie
+define SPEED_DYNAMIC_MIN          = 70;   // Laagste dynamische slowdown scalar
+define SPEED_DYNAMIC_MAX          = 135;  // Hoogste dynamische slowdown scalar
+define ROTATION_GAP_MIN           = 45;   // Kortste pulse-gap (ms) bij instabiele locks
+define ROTATION_GAP_MAX           = 180;  // Langste pulse-gap (ms) bij zeer stabiele locks
+define SNAP_STAGE_ONE             = 35;   // Stage 1 grens (intra-zone %)
+define SNAP_STAGE_TWO             = 70;   // Stage 2 grens (intra-zone %)
+
+define AIM_STATE_ACQUIRE          = 0;
+define AIM_STATE_TRACK            = 1;
+define AIM_STATE_CORRECT          = 2;
+define AIM_STATE_RECENTER         = 3;
+define AIM_ACQUIRE_LOCK_MAX       = 55;
+define AIM_TRACK_ERROR_MAX        = 18;
+define AIM_TRACK_VELOCITY_MAX     = 45;
+define AIM_CORRECT_ERROR_MIN      = 26;
+define AIM_CORRECT_DELTA_MIN      = 14;
+define AIM_CORRECT_EDGE_WEIGHT    = 45;
+define AIM_RECENTER_ERROR_MAX     = 12;
+define AIM_RECENTER_TREND_MAX     = 6;
+define AIM_RECENTER_ZONE_MIN      = 60;
+define AIM_RECENTER_STABLE_TIME   = 220;
+define AIM_STATE_BLEND_GAIN       = 28;
+
+define AIM_ACQUIRE_CORE_PCT       = 90;
+define AIM_ACQUIRE_SLOWDOWN_PCT   = 125;
+define AIM_ACQUIRE_ROTATION_PCT   = 70;
+define AIM_ACQUIRE_SNAP_PCT       = 65;
+define AIM_ACQUIRE_RESIST_PCT     = 60;
+define AIM_ACQUIRE_AUTOPULL_PCT   = 60;
+
+define AIM_TRACK_CORE_PCT         = 100;
+define AIM_TRACK_SLOWDOWN_PCT     = 100;
+define AIM_TRACK_ROTATION_PCT     = 100;
+define AIM_TRACK_SNAP_PCT         = 100;
+define AIM_TRACK_RESIST_PCT       = 90;
+define AIM_TRACK_AUTOPULL_PCT     = 100;
+
+define AIM_CORRECT_CORE_PCT       = 120;
+define AIM_CORRECT_SLOWDOWN_PCT   = 85;
+define AIM_CORRECT_ROTATION_PCT   = 140;
+define AIM_CORRECT_SNAP_PCT       = 145;
+define AIM_CORRECT_RESIST_PCT     = 70;
+define AIM_CORRECT_AUTOPULL_PCT   = 110;
+
+define AIM_RECENTER_CORE_PCT      = 95;
+define AIM_RECENTER_SLOWDOWN_PCT  = 135;
+define AIM_RECENTER_ROTATION_PCT  = 75;
+define AIM_RECENTER_SNAP_PCT      = 70;
+define AIM_RECENTER_RESIST_PCT    = 145;
+define AIM_RECENTER_AUTOPULL_PCT  = 140;
+
+define PRED_ACCEL_GAIN            = 30;   // Acceleration invloed (0-100)
+define PRED_VERTICAL_GAIN         = 35;   // Verticale bias gain (percent)
+define PRED_ONESHOT_MULT          = 140;  // Bias multiplier voor oneshot wapens
+define PRED_AR_MULT               = 110;  // Bias multiplier voor automatische wapens
+define PRED_SNIPER_MULT           = 90;   // Bias reductie voor sniper hold (stiller)
+define PRED_AERIAL_MULT           = 140;  // Bias multiplier bij aerial tracking
+define PRED_BUFFER_SIZE           = 6;
+define PRED_VELOCITY_SMOOTH_GAIN  = 45;
+define PRED_ACCEL_SMOOTH_GAIN     = 35;
+define PRED_HISTORY_BLEND         = 65;
+define PRED_HORIZON_MIN           = 2;
+define PRED_HORIZON_MAX           = 12;
+define PRED_HORIZON_SMOOTH_GAIN   = 35;
+define PRED_ACCEL_VARIANCE_GATE   = 24;
+define PRED_ACCEL_VARIANCE_CLAMP  = 80;
+define WEAPON_PROFILE_AR          = 0;
+define WEAPON_PROFILE_ONESHOT     = 1;
+define WEAPON_PROFILE_SNIPER      = 2;
+define WEAPON_PROFILE_COUNT       = 3;
+define WEAPON_PROFILE_BLEND_TIME  = 180;
+
+// =============== DEADZONE & DRIFT ==================
+define DEADZONE_BASE       = 8;
+define DRIFT_TOLERANCE     = 1;
+
+// =================== GLOBALS =======================
+int aim_on = 1;
+int rx, ry, lx, ly;
+int raw_rx, raw_ry, raw_lx, raw_ly;
+int input_mag, velocity_mag;
+int bubble_zone;
+int slowdown_factor, rotation_factor, snap_factor;
+int stabilized_rx, stabilized_ry;
+int rotation_x, rotation_y;
+int snap_x, snap_y;
+int final_rx, final_ry;
+
+int subsystem_flags;
+int diag_enabled;
+int diag_overlay_active;
+int diag_timer;
+int diag_index;
+int diag_count;
+int diag_distance_log[DIAG_BUFFER_SIZE];
+int diag_lock_log[DIAG_BUFFER_SIZE];
+int diag_slowdown_log[DIAG_BUFFER_SIZE];
+int diag_rotation_log[DIAG_BUFFER_SIZE];
+int diag_snap_log[DIAG_BUFFER_SIZE];
+int diag_rotation_gap_log[DIAG_BUFFER_SIZE];
+int diag_orbit_interval_log[DIAG_BUFFER_SIZE];
+int diag_flags_log[DIAG_BUFFER_SIZE];
+int hipfire_sticky_active;
+int hipfire_sticky_timer;
+int hipfire_sticky_weight;
+int hipfire_resistance_bonus;
+int rotation_gap_current;
+int rotation_jitter_timer;
+int rotation_jitter_interval;
+int rotation_mag_offset;
+int waveform_rng_state;
+int micro_orbit_timer;
+int micro_orbit_interval_ms;
+int micro_orbit_variation_timer;
+int micro_orbit_direction;
+
+// Micro movement
+int micro_angle;
+int micro_x, micro_y;
+int m_x, m_y;  // Micro search variables
+
+// Target lock
+int target_locked;
+int lock_timer;
+int lock_strength;
+int last_rx, last_ry;
+int delta_rx, delta_ry;
+
+// Strafe
+int strafe_active;
+
+// State
+int ads, shooting, jumping;
+int build_mode, edit_mode, edit_timer;
+int aerial_mode, sniper_mode, trickshot_lock;
+int jump_timer, shot_timer;
+int build_lockout;
+
+// Drift
+int drift_x, drift_y;
+int drift_timer;
+
+// Range
+int current_range;
+
+// Timing
+int delta, last_time;
+
+// Weapon detection
+int oneshot_mode;         // 1 if shotgun/sniper active
+int last_shot_time;       // Timestamp laatste schot
+int shot_interval;        // Tijd tussen shots
+
+// R2 SPAM FIX - zorgt dat wapen altijd schiet!
+int r2_pulse_timer;       // Timer voor R2 pulse
+
+// v2.0 IDLE AUTO-PULL & PROGRESSIVE SNAP
+int idle_timer;           // Timer sinds laatste camera input
+int movement_timer;       // Timer met movement input
+int snap_ramp_timer;      // Timer voor progressive snap
+int idle_pull_interval;           // Jittered interval for idle pull (Phase F)
+int movement_gate_interval;       // Jittered interval for movement gate (Phase F)
+int stealth_stealth_factor;       // Stealth factor 0-100 (controls randomization magnitude)
+int auto_pull_x, auto_pull_y;      // Auto-pull vars
+int ramp_pct;                       // Progressive snap var
+
+// Flickshot detection
+int flick_detected;
+int last_input_mag;
+int input_spike;
+
+// Rotation trigger pulse (MAGNETIC AIM!)
+int rotation_pulse_timer;
+int rotation_pulse_angle;
+int rotation_pulse_lx;
+int rotation_pulse_ly;
+
+// R2-TRIGGERED ASSIST (150ms delay + fade-out)
+int r2_assist_timer;       // Timer sinds R2 press
+int r2_assist_fade_timer;  // Fade-out timer na R2 release
+int r2_was_pressed;        // Track R2 state
+
+// Stick resistance (ON-TARGET STICKY!)
+int final_lx, final_ly;
+
+// Smooth pulse magnitude (slider-based)
+int pulse_magnitude;
+
+// Input-speed adaptive resistance
+int prev_rx, prev_ry;
+int input_velocity;
+int resistance_active;  // Hysteresis flag
+
+// Hyper-burst mode (ONE-SHOT!)
+int hyper_burst_active;
+int hyper_burst_timer;
+
+// Screen-space tracking
+int pixel_offset_x;
+int pixel_offset_y;
+int distance_pixels;
+int zone_weight_ultra;
+int zone_weight_close;
+int zone_weight_mid;
+int zone_weight_far;
+int zone_index;
+int tk_combined_delta;
+int tk_proximity_score;
+int tk_stability_score;
+int tk_trend_score;
+int tk_timer_score;
+int tk_raw_lock_conf;
+int lock_confidence;
+int zone_blend_pct;
+int assist_core_blend;
+int assist_slowdown_blend;
+int assist_rotation_blend;
+int assist_snap_blend;
+int assist_last_proximity_score;
+int aim_error_pixels;
+int distance_delta;
+int base_slowdown;
+int aim_error_avg;
+int aim_error_trend;
+int aim_error_variance;
+int velocity_avg;
+int last_distance_pixels;
+
+// Left-stick rotation gate
+int strafe_velocity;
+int rotation_active;
+
+// Magnetic strafe mode (AUTOMATIC PULL!)
+int virtual_strafe_x;
+int virtual_strafe_y;
+// === ASSIST AMPLIFICATION VARS ===
+int assist_engagement_signal;  // 0-100% hoe sterk Fortnite's assist actief is
+int micro_orbit_index;         // Direct orbit index (0-15) - NO DRIFT!
+int micro_orbit_radius;        // Current orbital radius
+int bubble_weight_factor;      // Combined bubble proximity factor (0-100)
+
+// Predictive lazy aim
+int enemy_velocity_x;
+int enemy_velocity_y;
+int enemy_velocity_prev_x;
+int enemy_velocity_prev_y;
+int enemy_accel_x;
+int enemy_accel_y;
+int predict_offset_x;
+int predict_offset_y;
+int lazy_bias_x;
+int lazy_bias_y;
+int lazy_bias_cap_x;
+int lazy_bias_cap_y;
+int predictive_bias_strength;
+int pred_weapon_mult;
+int predict_horizon_frames;
+int last_pixel_x;
+int last_pixel_y;
+int enemy_velocity_hist_x[PRED_BUFFER_SIZE];
+int enemy_velocity_hist_y[PRED_BUFFER_SIZE];
+int enemy_speed_hist[PRED_BUFFER_SIZE];
+int enemy_hist_index;
+int enemy_hist_count;
+int enemy_velocity_avg_x;
+int enemy_velocity_avg_y;
+int enemy_velocity_avg_prev_x;
+int enemy_velocity_avg_prev_y;
+int enemy_accel_avg_x;
+int enemy_accel_avg_y;
+int enemy_accel_variance;
+int enemy_accel_variance_avg;
+int enemy_velocity_blend_x;
+int enemy_velocity_blend_y;
+int enemy_accel_blend_x;
+int enemy_accel_blend_y;
+int enemy_accel_mag;
+int enemy_accel_avg_mag;
+int enemy_speed_avg;
+int enemy_speed_variance;
+int enemy_speed_variance_avg;
+int enemy_stability_pct;
+int predict_horizon_target;
+int weapon_profile_current;
+int weapon_profile_target;
+int weapon_profile_active;
+int weapon_profile_timer;
+int weapon_core_gain[WEAPON_PROFILE_COUNT];
+int weapon_slowdown_gain[WEAPON_PROFILE_COUNT];
+int weapon_rotation_gain[WEAPON_PROFILE_COUNT];
+int weapon_snap_gain[WEAPON_PROFILE_COUNT];
+int weapon_resist_gain[WEAPON_PROFILE_COUNT];
+int weapon_autopull_gain[WEAPON_PROFILE_COUNT];
+int weapon_ads_slowdown_gain[WEAPON_PROFILE_COUNT];
+int weapon_ads_rotation_gain[WEAPON_PROFILE_COUNT];
+int weapon_recoil_pitch_gain[WEAPON_PROFILE_COUNT];
+int weapon_recoil_yaw_gain[WEAPON_PROFILE_COUNT];
+int weapon_profile_blend_pct;
+int weapon_gain_core_mix;
+int weapon_gain_slowdown_mix;
+int weapon_gain_rotation_mix;
+int weapon_gain_snap_mix;
+int weapon_gain_resist_mix;
+int weapon_gain_autopull_mix;
+int weapon_gain_ads_slowdown_mix;
+int weapon_gain_ads_rotation_mix;
+int weapon_detect_score[WEAPON_PROFILE_COUNT];
+int weapon_profile_confidence[WEAPON_PROFILE_COUNT];
+int resistance_lock_scalar;
+int resistance_snap_scalar;
+int resistance_error_scalar;
+int resistance_combined_pct;
+int resistance_glue_active;
+int resistance_glue_timer;
+int resistance_glue_gain;
+int freedom_release_blend;
+int freedom_release_target;
+
+// Aerial
+int aerial_timer;
+int fall_velocity;
+int aerial_offset_y;
+
+// Shake
+int shake_timer;
+
+// ============ SLIDERS - REDESIGNED! =======
+// Core sliders (unified voor ADS + hipfire)
+int slider_strength;    // Master strength: pulse + resistance (SPVAR_1)
+int slider_smoothness;  // Pulse frequency: shake vs tracking (SPVAR_2)
+int slider_rotation;    // Pull strength: rotation power (SPVAR_3)
+// Range tuning (unified - no ADS/hip separation!)
+int slider_close;       // Close range feel (SPVAR_4)
+int slider_medium;      // Medium range feel (SPVAR_5)
+int slider_far;         // Far range feel (SPVAR_6)
+// Advanced
+int slider_trick;       // Trickshot boost (SPVAR_7)
+int slider_deadzone;    // Deadzone adjustment (SPVAR_8)
+
+// Menu
+int menu_mode;
+int active_func;
+int menu_close_delay;  // Prevent Circle from triggering build mode after menu close
+
+// Temp vars
+int g_val, g_fill, g_chars, g_temp, g_tboost, g_total, g_p, g_expected;
+int range_slider;
+int g_trick_mult;
+
+// ============ SIN/COS LOOKUP TABLES (16-POINT SMOOTH CIRCULAR MOTION) ===========
+// Fixed-point integers scaled to 100 (100 = 1.0, -100 = -1.0)
+// Prevents "hoekig" movement - architect approved!
+int sinLUT[16];
+int cosLUT[16];
+
+// Hysteresis state tracking
+int velocity_hysteresis_active;  // Track if velocity resistance is active
+int panic_triggered;
+int sticky_edge_weight;
+int sticky_edge_recent_sign;
+int sticky_edge_flip_timer;
+int sticky_edge_flip_count;
+int sticky_edge_active;
+int sticky_edge_timer;
+int sticky_edge_boost;
+int sticky_edge_snap_boost;
+int aim_state_current;
+int aim_state_timer;
+int freedom_release_timer;
+int freedom_release_active;
+int bubble_zone_raw;
+int bubble_zone_stable;
+int bubble_inner_radius;
+int bubble_outer_radius;
+int enemy_speed_mag;
+int enemy_dir_x;
+int enemy_dir_y;
+int rotation_gap_dynamic;
+int rotation_bias_x;
+int rotation_bias_y;
+int snap_stage;
+int aim_state_candidate;
+int aim_state_weight_acquire;
+int aim_state_weight_track;
+int aim_state_weight_correct;
+int aim_state_weight_recenter;
+int aim_state_core_pct;
+int aim_state_slowdown_pct;
+int aim_state_rotation_pct;
+int aim_state_snap_pct;
+int aim_state_resistance_pct;
+int aim_state_auto_pull_pct;
+
+// =================== HELPER UTILITIES ===================
+function pass_through(value){
+    return value;
+}
+
+function clamp_i(val, min_val, max_val){
+    if(val < min_val) return min_val;
+    if(val > max_val) return max_val;
+    return val;
+}
+
+function saturate_pct(val){
+    return clamp_i(val, 0, 100);
+}
+
+function lerp_pct(base, target, pct){
+    return base + ((target - base) * pct) / 100;
+}
+
+function smooth_gain(current, target, gain_pct){
+    // gain_pct 0-100 (0 = no change, 100 = snap)
+    gain_pct = saturate_pct(gain_pct);
+    if(gain_pct == 0) return current;
+    if(gain_pct >= 100) return target;
+    return current + ((target - current) * gain_pct) / 100;
+}
+
+function soft_step(value, start_val, end_val){
+    // Returns 0-100 softened ramp between start and end
+    if(value <= start_val) return 0;
+    if(value >= end_val) return 100;
+    value = (value - start_val) * 100 / (end_val - start_val);
+    // cubic ease (value^2 * (3 - 2*value)) in 0-100 range
+    return (value * value * (300 - (2 * value))) / 10000;
+}
+
+// ============== CUSTOM INTEGER SQUARE ROOT (GPC SAFE) ==============
+function isqrt_custom(n) {
+    if (n <= 0) return 0;
+    
+    // Initial guess, assuming max value is less than 2^31 (int limits)
+    // Refactored to use global variables g_val (root) and g_temp (next_root) for GPC compatibility.
+    // g_val, g_temp are already defined as globals.
+    g_val = n;
+    g_temp = (g_val + (n / g_val)) / 2;
+    
+    while(g_val > g_temp) {
+        g_val = g_temp;
+        g_temp = (g_val + (n / g_val)) / 2;
+    }
+    return g_val;
+}
+
+function assist_pipeline_reset(){
+    assist_core_blend = 0;
+    assist_slowdown_blend = 0;
+    assist_rotation_blend = 0;
+    assist_snap_blend = 0;
+    lock_confidence = 0;
+    aim_error_avg = 0;
+    aim_error_trend = 0;
+    aim_error_variance = 0;
+    velocity_avg = 0;
+    snap_ramp_timer = 0;
+    rotation_pulse_timer = 0;
+    rotation_pulse_angle = 0;
+    resistance_active = 0;
+    velocity_hysteresis_active = 0;
+    diag_timer = 0;
+    hipfire_sticky_active = 0;
+    hipfire_sticky_timer = 0;
+    hipfire_sticky_weight = 0;
+    hipfire_resistance_bonus = 0;
+    aim_state_weight_acquire = 0;
+    aim_state_weight_track = 100;
+    aim_state_weight_correct = 0;
+    aim_state_weight_recenter = 0;
+    aim_state_core_pct = 100;
+    aim_state_slowdown_pct = 100;
+    aim_state_rotation_pct = 100;
+    aim_state_snap_pct = 100;
+    aim_state_resistance_pct = 100;
+    aim_state_auto_pull_pct = 100;
+    aim_state_current = AIM_STATE_TRACK;
+    aim_state_timer = 0;
+    enemy_hist_index = 0;
+    enemy_hist_count = 0;
+    enemy_velocity_x = 0;
+    enemy_velocity_y = 0;
+    enemy_velocity_prev_x = 0;
+    enemy_velocity_prev_y = 0;
+    enemy_velocity_avg_x = 0;
+    enemy_velocity_avg_y = 0;
+    enemy_velocity_avg_prev_x = 0;
+    enemy_velocity_avg_prev_y = 0;
+    enemy_velocity_blend_x = 0;
+    enemy_velocity_blend_y = 0;
+    enemy_accel_x = 0;
+    enemy_accel_y = 0;
+    enemy_accel_avg_x = 0;
+    enemy_accel_avg_y = 0;
+    enemy_accel_blend_x = 0;
+    enemy_accel_blend_y = 0;
+    enemy_accel_mag = 0;
+    enemy_accel_avg_mag = 0;
+    enemy_accel_variance = 0;
+    enemy_accel_variance_avg = 0;
+    enemy_speed_avg = 0;
+    enemy_speed_variance = 0;
+    enemy_speed_variance_avg = 0;
+    enemy_stability_pct = 100;
+    predict_horizon_frames = PRED_HORIZON_MIN;
+    predict_offset_x = 0;
+    predict_offset_y = 0;
+    lazy_bias_x = 0;
+    lazy_bias_y = 0;
+    weapon_profile_timer = 0;
+    weapon_profile_blend_pct = 0;
+    g_temp = weapon_profile_target;
+    if(g_temp < 0) g_temp = 0;
+    if(g_temp >= WEAPON_PROFILE_COUNT) g_temp = WEAPON_PROFILE_COUNT - 1;
+    weapon_profile_active = g_temp;
+    weapon_profile_current = g_temp;
+    weapon_gain_core_mix = weapon_core_gain[g_temp];
+    weapon_gain_slowdown_mix = weapon_slowdown_gain[g_temp];
+    weapon_gain_rotation_mix = weapon_rotation_gain[g_temp];
+    weapon_gain_snap_mix = weapon_snap_gain[g_temp];
+    weapon_gain_resist_mix = weapon_resist_gain[g_temp];
+    weapon_gain_autopull_mix = weapon_autopull_gain[g_temp];
+    weapon_gain_ads_slowdown_mix = weapon_ads_slowdown_gain[g_temp];
+    weapon_gain_ads_rotation_mix = weapon_ads_rotation_gain[g_temp];
+    weapon_detect_score[0] = 0;
+    weapon_detect_score[1] = 0;
+    weapon_detect_score[2] = 0;
+    weapon_profile_confidence[WEAPON_PROFILE_AR] = 80;
+    weapon_profile_confidence[WEAPON_PROFILE_ONESHOT] = 25;
+    weapon_profile_confidence[WEAPON_PROFILE_SNIPER] = 25;
+    resistance_lock_scalar = 0;
+    resistance_snap_scalar = 0;
+    resistance_error_scalar = 0;
+    resistance_combined_pct = 0;
+    resistance_glue_active = 0;
+    resistance_glue_timer = 0;
+    resistance_glue_gain = 0;
+    freedom_release_blend = 0;
+    freedom_release_target = 0;
+
+    // Phase F: Regenerate Anti-Detection Timers on Reset
+    idle_pull_interval = IDLE_AUTO_PULL_TIME + waveform_rand_signed(STEALTH_IDLE_JITTER);
+    movement_gate_interval = MOVEMENT_GATE_TIME + waveform_rand_signed(STEALTH_MOVEMENT_JITTER);
+    if(idle_pull_interval < 10) idle_pull_interval = 10; 
+    if(movement_gate_interval < 10) movement_gate_interval = 10;
+}
+
+function init_weapon_profiles(){
+    weapon_core_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_slowdown_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_rotation_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_snap_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_resist_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_autopull_gain[WEAPON_PROFILE_AR] = 100;
+
+    weapon_core_gain[WEAPON_PROFILE_ONESHOT] = 112;
+    weapon_slowdown_gain[WEAPON_PROFILE_ONESHOT] = 125;
+    weapon_rotation_gain[WEAPON_PROFILE_ONESHOT] = 135;
+    weapon_snap_gain[WEAPON_PROFILE_ONESHOT] = 140;
+    weapon_resist_gain[WEAPON_PROFILE_ONESHOT] = 120;
+    weapon_autopull_gain[WEAPON_PROFILE_ONESHOT] = 110;
+
+    weapon_core_gain[WEAPON_PROFILE_SNIPER] = 95;
+    weapon_slowdown_gain[WEAPON_PROFILE_SNIPER] = 90;
+    weapon_rotation_gain[WEAPON_PROFILE_SNIPER] = 92;
+    weapon_snap_gain[WEAPON_PROFILE_SNIPER] = 110;
+    weapon_resist_gain[WEAPON_PROFILE_SNIPER] = 105;
+    weapon_autopull_gain[WEAPON_PROFILE_SNIPER] = 88;
+
+    weapon_ads_slowdown_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_ads_slowdown_gain[WEAPON_PROFILE_ONESHOT] = 112;
+    weapon_ads_slowdown_gain[WEAPON_PROFILE_SNIPER] = 95;
+
+    weapon_ads_rotation_gain[WEAPON_PROFILE_AR] = 100;
+    weapon_ads_rotation_gain[WEAPON_PROFILE_ONESHOT] = 110;
+    weapon_ads_rotation_gain[WEAPON_PROFILE_SNIPER] = 92;
+
+    weapon_recoil_pitch_gain[WEAPON_PROFILE_AR] = 48;
+    weapon_recoil_pitch_gain[WEAPON_PROFILE_ONESHOT] = 32;
+    weapon_recoil_pitch_gain[WEAPON_PROFILE_SNIPER] = 18;
+
+    weapon_recoil_yaw_gain[WEAPON_PROFILE_AR] = 36;
+    weapon_recoil_yaw_gain[WEAPON_PROFILE_ONESHOT] = 28;
+    weapon_recoil_yaw_gain[WEAPON_PROFILE_SNIPER] = 12;
+
+    weapon_profile_current = WEAPON_PROFILE_AR;
+    weapon_profile_target = WEAPON_PROFILE_AR;
+    weapon_profile_active = WEAPON_PROFILE_AR;
+    weapon_profile_timer = 0;
+    weapon_profile_blend_pct = 0;
+
+    weapon_gain_core_mix = weapon_core_gain[WEAPON_PROFILE_AR];
+    weapon_gain_slowdown_mix = weapon_slowdown_gain[WEAPON_PROFILE_AR];
+    weapon_gain_rotation_mix = weapon_rotation_gain[WEAPON_PROFILE_AR];
+    weapon_gain_snap_mix = weapon_snap_gain[WEAPON_PROFILE_AR];
+    weapon_gain_resist_mix = weapon_resist_gain[WEAPON_PROFILE_AR];
+    weapon_gain_autopull_mix = weapon_autopull_gain[WEAPON_PROFILE_AR];
+    weapon_gain_ads_slowdown_mix = weapon_ads_slowdown_gain[WEAPON_PROFILE_AR];
+    weapon_gain_ads_rotation_mix = weapon_ads_rotation_gain[WEAPON_PROFILE_AR];
+
+    weapon_profile_confidence[WEAPON_PROFILE_AR] = 80;
+    weapon_profile_confidence[WEAPON_PROFILE_ONESHOT] = 25;
+    weapon_profile_confidence[WEAPON_PROFILE_SNIPER] = 25;
+}
+
+function apply_weapon_profile_scaling(){
+    assist_core_blend = clamp_i((assist_core_blend * weapon_gain_core_mix) / 100, 0, 100);
+    assist_slowdown_blend = clamp_i((assist_slowdown_blend * weapon_gain_slowdown_mix) / 100, 0, 100);
+    assist_rotation_blend = clamp_i((assist_rotation_blend * weapon_gain_rotation_mix) / 100, 0, 100);
+    assist_snap_blend = clamp_i((assist_snap_blend * weapon_gain_snap_mix) / 100, 0, 100);
+    aim_state_resistance_pct = clamp_i((aim_state_resistance_pct * weapon_gain_resist_mix) / 100, 40, 200);
+}
+
+// ============== RECOIL GAIN MODULATION ==============
+function apply_recoil_modulation(){
+    if(!ads || !shooting) return;
+
+    g_val = weapon_recoil_pitch_gain[weapon_profile_current]; // current_pitch_gain
+    g_temp = weapon_recoil_yaw_gain[weapon_profile_current]; // current_yaw_gain
+    
+    // Vertical modulation (pitch) applied to Snap (vertical)
+    // Reduce snap strength to prevent aim assist fighting recoil.
+    // Max reduction is 50%. A gain of 48 means 48% of the assist is modulated/reduced
+    g_p = 100 - (g_val / 2); // vertical_mod_pct
+    if(g_p < 50) g_p = 50; 
+    
+    // Horizontal modulation (yaw)
+    g_fill = 100 - (g_temp / 2); // horizontal_mod_pct
+    if(g_fill < 70) g_fill = 70; 
+    
+    // Apply modulation to blended assist factors
+    // Horizontal modulation primarily affects Rotation (aim pull)
+    assist_rotation_blend = (assist_rotation_blend * g_fill) / 100;
+    
+    // Vertical modulation primarily affects Snap (target acquisition/vertical pull)
+    assist_snap_blend = (assist_snap_blend * g_p) / 100;
+
+    // Core blend modulation (general sensitivity to control everything)
+    assist_core_blend = (assist_core_blend * g_p) / 100;
+}
+
+function update_weapon_profile(){
+    // g_val = the determined target profile index (replacement for local 'target')
+    g_val = weapon_profile_target; 
+    if(g_val < 0) g_val = 0;
+    if(g_val >= WEAPON_PROFILE_COUNT) g_val = WEAPON_PROFILE_COUNT - 1;
+
+    // g_temp = active profile index (replacement for local 'active')
+    g_temp = weapon_profile_active;
+    if(g_temp < 0 || g_temp >= WEAPON_PROFILE_COUNT){
+        g_temp = g_val; // active = target
+        weapon_profile_active = g_temp;
+        weapon_profile_timer = 0;
+        weapon_profile_blend_pct = 0;
+    }
+
+    if(g_temp != g_val){ // active != target
+        weapon_profile_timer = weapon_profile_timer + delta;
+        if(weapon_profile_timer >= WEAPON_PROFILE_BLEND_TIME){
+            weapon_profile_active = g_val; // active = target
+            weapon_profile_current = g_val; // current = target
+            weapon_profile_timer = 0;
+            weapon_profile_blend_pct = 0;
+        } else {
+            weapon_profile_blend_pct = (weapon_profile_timer * 100) / WEAPON_PROFILE_BLEND_TIME;
+            if(weapon_profile_blend_pct > 100) weapon_profile_blend_pct = 100;
+        }
+    } else {
+        g_temp = weapon_profile_current;
+        weapon_profile_current = g_temp; // current = active
+        weapon_profile_timer = 0;
+        weapon_profile_blend_pct = 0;
+    }
+
+    g_p = weapon_profile_blend_pct; // blend_pct
+    g_fill = weapon_profile_active; // blend_from
+    g_expected = g_val; // blend_to
+
+    if(g_p > 0 && g_fill != g_expected){
+        weapon_gain_core_mix = lerp_pct(weapon_core_gain[g_fill], weapon_core_gain[g_expected], g_p);
+        weapon_gain_slowdown_mix = lerp_pct(weapon_slowdown_gain[g_fill], weapon_slowdown_gain[g_expected], g_p);
+        weapon_gain_rotation_mix = lerp_pct(weapon_rotation_gain[g_fill], weapon_rotation_gain[g_expected], g_p);
+        weapon_gain_snap_mix = lerp_pct(weapon_snap_gain[g_fill], weapon_snap_gain[g_expected], g_p);
+        weapon_gain_resist_mix = lerp_pct(weapon_resist_gain[g_fill], weapon_resist_gain[g_expected], g_p);
+        weapon_gain_autopull_mix = lerp_pct(weapon_autopull_gain[g_fill], weapon_autopull_gain[g_expected], g_p);
+        weapon_gain_ads_slowdown_mix = lerp_pct(weapon_ads_slowdown_gain[g_fill], weapon_ads_slowdown_gain[g_expected], g_p);
+        weapon_gain_ads_rotation_mix = lerp_pct(weapon_ads_rotation_gain[g_fill], weapon_ads_rotation_gain[g_expected], g_p);
+    } else {
+        g_temp = weapon_profile_current;
+        weapon_gain_core_mix = weapon_core_gain[g_temp];
+        weapon_gain_slowdown_mix = weapon_slowdown_gain[g_temp];
+        weapon_gain_rotation_mix = weapon_rotation_gain[g_temp];
+        weapon_gain_snap_mix = weapon_snap_gain[g_temp];
+        weapon_gain_resist_mix = weapon_resist_gain[g_temp];
+        weapon_gain_autopull_mix = weapon_autopull_gain[g_temp];
+        weapon_gain_ads_slowdown_mix = weapon_ads_slowdown_gain[g_temp];
+        weapon_gain_ads_rotation_mix = weapon_ads_rotation_gain[g_temp];
+    }
+}
+
+// ====================== INIT =======================
+init {
+    splash_draw();  // Show logo IMMEDIATELY - prevent filename flash!
+    
+    last_time = get_rtime();
+    set_led(LED_1,1); set_led(LED_2,1); set_led(LED_3,1); set_led(LED_4,1);
+    
+    // Initialize SIN/COS lookup tables (GPC needs manual init)
+    sinLUT[0]=0; sinLUT[1]=38; sinLUT[2]=71; sinLUT[3]=92; sinLUT[4]=100; sinLUT[5]=92; sinLUT[6]=71; sinLUT[7]=38;
+    sinLUT[8]=0; sinLUT[9]=-38; sinLUT[10]=-71; sinLUT[11]=-92; sinLUT[12]=-100; sinLUT[13]=-92; sinLUT[14]=-71; sinLUT[15]=-38;
+    cosLUT[0]=100; cosLUT[1]=92; cosLUT[2]=71; cosLUT[3]=38; cosLUT[4]=0; cosLUT[5]=-38; cosLUT[6]=-71; cosLUT[7]=-92;
+    cosLUT[8]=-100; cosLUT[9]=-92; cosLUT[10]=-71; cosLUT[11]=-38; cosLUT[12]=0; cosLUT[13]=38; cosLUT[14]=71; cosLUT[15]=92;
+    
+    // Initialize adaptive resistance
+    prev_rx = 0; prev_ry = 0;
+    input_velocity = 0;
+    resistance_active = 0;  // Start DISABLED - only activate inside bubble!
+    
+    // REDESIGNED SLIDERS - 50 = neutral (current perfect state!)
+    slider_strength = get_pvar(SPVAR_1, 0, 100, 50);      // Master strength
+    slider_smoothness = get_pvar(SPVAR_2, 0, 100, 50);    // Pulse frequency
+    slider_rotation = get_pvar(SPVAR_3, 0, 100, 50);      // Pull strength
+    slider_close = get_pvar(SPVAR_4, 0, 100, 50);         // Close range
+    slider_medium = get_pvar(SPVAR_5, 0, 100, 50);        // Medium range
+    slider_far = get_pvar(SPVAR_6, 0, 100, 50);           // Far range
+    slider_trick = get_pvar(SPVAR_7, 0, 100, 50);         // Trickshot
+    slider_deadzone = get_pvar(SPVAR_8, 0, 100, 50);      // Deadzone
+    
+    // First-time defaults (if all sliders are 0)
+    if(slider_strength == 0 && slider_smoothness == 0){
+        slider_strength = 50;  slider_smoothness = 50;  slider_rotation = 50;
+        slider_close = 50;     slider_medium = 50;      slider_far = 50;
+        slider_trick = 50;     slider_deadzone = 50;
+        save_sliders();
+    }
+    
+    micro_angle = 0;
+    micro_orbit_index = 0;
+    init_weapon_profiles();
+    assist_pipeline_reset();
+    waveform_seed(get_rtime());
+    rotation_gap_current = ROTATION_FREQ_SLOW_LOCK;
+    rotation_jitter_timer = 0;
+    rotation_jitter_interval = 0;
+    micro_orbit_timer = 0;
+    micro_orbit_interval_ms = 12;
+    micro_orbit_variation_timer = 0;
+    micro_orbit_direction = 1;
+
+    // Phase F: Anti-Detection Jitter Initialization for Combo Timers
+    stealth_stealth_factor = 100; // Max stealth (max jitter)
+    idle_pull_interval = IDLE_AUTO_PULL_TIME + waveform_rand_signed(STEALTH_IDLE_JITTER);
+    movement_gate_interval = MOVEMENT_GATE_TIME + waveform_rand_signed(STEALTH_MOVEMENT_JITTER);
+    if(idle_pull_interval < 10) idle_pull_interval = 10; // Safety minimum
+    if(movement_gate_interval < 10) movement_gate_interval = 10; // Safety minimum
+
+    subsystem_flags = SUBSYSTEM_ALL;
+    diag_enabled = 0;
+    diag_overlay_active = 0;
+    diag_timer = 0;
+    diag_index = 0;
+    diag_count = 0;
+    hipfire_sticky_active = 0;
+    hipfire_sticky_timer = 0;
+    hipfire_sticky_weight = 0;
+    hipfire_resistance_bonus = 0;
+
+    bubble_zone_edges[0] = 12;
+    bubble_zone_edges[1] = 25;
+    bubble_zone_edges[2] = 40;
+    bubble_zone_edges[3] = 60;
+    bubble_zone_edges[4] = 90;
+
+    slowdown_zone_map[0] = SLOWDOWN_ULTRA;
+    slowdown_zone_map[1] = SLOWDOWN_CLOSE;
+    slowdown_zone_map[2] = SLOWDOWN_MEDIUM;
+    slowdown_zone_map[3] = SLOWDOWN_FAR;
+    slowdown_zone_map[4] = SLOWDOWN_OUTER;
+
+    rotation_pull_hip_map[0] = ROTATION_PULL_HIP_ULTRA;
+    rotation_pull_hip_map[1] = ROTATION_PULL_HIP_CLOSE;
+    rotation_pull_hip_map[2] = ROTATION_PULL_HIP_MEDIUM;
+    rotation_pull_hip_map[3] = ROTATION_PULL_HIP_FAR;
+
+    rotation_pull_ads_map[0] = ROTATION_PULL_ADS_ULTRA;
+    rotation_pull_ads_map[1] = ROTATION_PULL_ADS_CLOSE;
+    rotation_pull_ads_map[2] = ROTATION_PULL_ADS_MEDIUM;
+    rotation_pull_ads_map[3] = ROTATION_PULL_ADS_FAR;
+}
+
+// ====================== MAIN =======================
+main {
+    delta = get_rtime() - last_time;
+    last_time = get_rtime();
+    shake_timer = shake_timer + delta;
+    
+    // Update hyper-burst timer
+    if(hyper_burst_active){
+        hyper_burst_timer = hyper_burst_timer + delta;
+        if(hyper_burst_timer > HYPER_BURST_DURATION){
+            hyper_burst_active = 0;
+        }
+    }
+    
+    if(jump_timer > 0){ jump_timer = jump_timer - delta; if(jump_timer < 0) jump_timer = 0; }
+    if(shot_timer > 0){ shot_timer = shot_timer - delta; if(shot_timer < 0) shot_timer = 0; }
+    if(build_lockout > 0){ build_lockout = build_lockout - delta; if(build_lockout < 0) build_lockout = 0; }
+    
+    if(get_val(BTN_MENU_OPEN) && event_press(BTN_MENU_KEY)) {
+        menu_mode = TRUE;
+    }
+    
+    if(menu_mode && event_press(BTN_MENU_CLOSE)) {
+        menu_mode = FALSE;
+        menu_close_delay = 200;  // 200ms delay to prevent Circle from triggering build
+        splash_draw();
+    }
+    
+    // Count down close delay
+    if(menu_close_delay > 0){
+        menu_close_delay = menu_close_delay - delta;
+        if(menu_close_delay < 0) menu_close_delay = 0;
+    }
+    
+    if(menu_mode) {
+        set_val(AXIS_RX, 0);
+        set_val(AXIS_RY, 0);
+        set_val(LX, 0);
+        set_val(LY, 0);
+        set_val(BTN_SHOOT, 0);
+        set_val(BTN_JUMP, 0);
+        
+        if(event_press(BTN_RIGHT)) { active_func = active_func + 1; if(active_func > 7) active_func = 0; }  // 8 sliders (0-7)
+        if(event_press(BTN_LEFT))  { active_func = active_func - 1; if(active_func < 0) active_func = 7; }
+        
+        if(event_press(BTN_UP)) {
+            if(active_func==0 && slider_strength < 100) slider_strength = slider_strength + 10;
+            if(active_func==1 && slider_smoothness < 100) slider_smoothness = slider_smoothness + 10;
+            if(active_func==2 && slider_rotation < 100) slider_rotation = slider_rotation + 10;
+            if(active_func==3 && slider_close < 100) slider_close = slider_close + 10;
+            if(active_func==4 && slider_medium < 100) slider_medium = slider_medium + 10;
+            if(active_func==5 && slider_far < 100) slider_far = slider_far + 10;
+            if(active_func==6 && slider_trick < 100) slider_trick = slider_trick + 10;
+            if(active_func==7 && slider_deadzone < 100) slider_deadzone = slider_deadzone + 10;
+            save_sliders();
+            load_sliders();
+        }
+        if(event_press(BTN_DOWN)) {
+            if(active_func==0 && slider_strength > 0) slider_strength = slider_strength - 10;
+            if(active_func==1 && slider_smoothness > 0) slider_smoothness = slider_smoothness - 10;
+            if(active_func==2 && slider_rotation > 0) slider_rotation = slider_rotation - 10;
+            if(active_func==3 && slider_close > 0) slider_close = slider_close - 10;
+            if(active_func==4 && slider_medium > 0) slider_medium = slider_medium - 10;
+            if(active_func==5 && slider_far > 0) slider_far = slider_far - 10;
+            if(active_func==6 && slider_trick > 0) slider_trick = slider_trick - 10;
+            if(active_func==7 && slider_deadzone > 0) slider_deadzone = slider_deadzone - 10;
+            save_sliders();
+            load_sliders();
+        }
+        
+        render_menu();
+    }
+    else {
+        if(!diag_overlay_active){
+            g_expected = ((get_val(BTN_TOGGLE) && event_press(BTN_UP)) || (get_val(BTN_UP) && event_press(BTN_TOGGLE)));
+            g_p = ((get_val(BTN_TOGGLE) && event_press(BTN_DOWN)) || (get_val(BTN_DOWN) && event_press(BTN_TOGGLE)));
+
+            // TOGGLE ON: L1 + Dpad Up (order-agnostic)
+            if(g_expected){
+                aim_on = 1;
+                set_led(LED_4,1);
+            }
+            
+            // TOGGLE OFF: L1 + Dpad Down (order-agnostic)
+            if(g_p){
+                toggle_aim_off();
+            }
+        }
+        
+        if(get_val(BTN_TOGGLE) && event_press(BTN_RESET)){
+            diag_overlay_active = !diag_overlay_active;
+            if(diag_overlay_active){
+                diag_enabled = 1;
+                // GPC compatibility fix: Removed string literal printf
+                // printf("Diagnostics overlay ON\n");
+            }
+        }
+        
+        if(diag_overlay_active && get_val(BTN_TOGGLE)){
+            if(event_press(BTN_LEFT)){
+                toggle_subsystem(SUBSYSTEM_SLOWDOWN);
+                // printf("Slowdown subsystem=%d\n", (subsystem_flags & SUBSYSTEM_SLOWDOWN) > 0);
+            }
+            if(event_press(BTN_RIGHT)){
+                toggle_subsystem(SUBSYSTEM_ROTATION);
+                // printf("Rotation subsystem=%d\n", (subsystem_flags & SUBSYSTEM_ROTATION) > 0);
+            }
+            if(event_press(BTN_UP)){
+                toggle_subsystem(SUBSYSTEM_SNAP);
+                // printf("Snap subsystem=%d\n", (subsystem_flags & SUBSYSTEM_SNAP) > 0);
+            }
+            if(event_press(BTN_DOWN)){
+                toggle_subsystem(SUBSYSTEM_RESISTANCE);
+                // printf("Resistance subsystem=%d\n", (subsystem_flags & SUBSYSTEM_RESISTANCE) > 0);
+            }
+            if(event_press(PS4_SHARE)){
+                diagnostics_dump();
+            }
+        }
+
+        if(oneshot_mode && !ads){
+            if(event_press(BTN_SHOOT)){
+                hipfire_sticky_active = 1;
+                hipfire_sticky_timer = HIP_STICKY_WINDOW_MS;
+            }
+            if(hipfire_sticky_active){
+                if(shooting){
+                    hipfire_sticky_timer = HIP_STICKY_WINDOW_MS;
+                } else if(hipfire_sticky_timer > 0){
+                    hipfire_sticky_timer = hipfire_sticky_timer - delta;
+                    if(hipfire_sticky_timer < 0) hipfire_sticky_timer = 0;
+                }
+                g_val = abs(lx) + abs(ly) + abs(rx) + abs(ry); // GPC Compatibility Fix: Replaced local int with global g_val
+                if(hipfire_sticky_timer == 0 || g_val >= HIP_STICKY_CANCEL_VELOCITY){ // Used g_val instead of local var
+                    hipfire_sticky_active = 0;
+                }
+            }
+        } else {
+            hipfire_sticky_active = 0;
+            hipfire_sticky_timer = 0;
+        }
+        
+        
+        // ===== VICTRIX TOUCHPAD MAPPING (L3 + OPTIONS = MAP) =====
+        // Victrix Pro BFG heeft geen touchpad - L3 + OPTIONS simuleert touchpad press
+        if(get_val(PS4_L3) && get_val(PS4_OPTIONS)){
+            set_val(PS4_TOUCH, 100);  // Simuleer touchpad press voor Fortnite map
+        }
+        
+        // Build/Edit detection - SMART real-time detection!
+        // CIRCLE ingedrukt = build mode, release = weapon mode
+        // GATE: Skip detection if menu just closed (prevent Circle from triggering build)
+        if(get_val(BTN_BUILD) && menu_close_delay == 0){
+            // CIRCLE pressed = BUILD MODE ACTIVE
+            if(!build_mode){
+                // Net in build mode gegaan - stop aim assist + LOCKOUT
+                build_mode = 1;
+                combo_stop(UltimateMaster);
+                build_lockout = 100;
+            }
+            
+            // Edit mode timer (hold > 200ms = edit)
+            edit_timer = edit_timer + delta;
+            if(edit_timer > 200 && !edit_mode){
+                edit_mode = 1;
+            }
+        }
+        else {
+            // CIRCLE released = WEAPON MODE ACTIVE
+            if(build_mode || edit_mode){
+                // Net uit build/edit - instant restart aim assist (ONLY if lockout expired!)
+                build_mode = 0;
+                edit_mode = 0;
+                edit_timer = 0;
+            }
+        }
+        
+        // ========== R2 SPAM FIX - ALTIJD SCHIETEN! ==========
+        // Als user R2 indrukt, pulse het signaal zodat het ALTIJD schiet!
+        if(get_val(BTN_SHOOT) > 50){
+            r2_pulse_timer = r2_pulse_timer + 1;
+            
+            // Pulse pattern: 3 frames AAN, 1 frame UIT (snel genoeg voor shotgun)
+            if(r2_pulse_timer >= 4){
+                r2_pulse_timer = 0;
+            }
+            
+            // Forceer R2 signaal tijdens pulse
+            if(r2_pulse_timer < 3){
+                set_val(BTN_SHOOT, 100);  // MAX schiet signaal!
+            }
+        } else {
+            r2_pulse_timer = 0;
+        }
+        
+        // Aim assist actief tijdens ADS of schieten
+        if(aim_on && (ads || shooting)){
+            combo_run(UltimateMaster);
+        } else if(!aim_on){
+            assist_pipeline_reset();
+        }
+        
+        // Get raw inputs
+        raw_rx = get_val(AXIS_RX);
+        raw_ry = get_val(AXIS_RY);
+        raw_lx = get_val(LX);
+        raw_ly = get_val(LY);
+        
+        // Drift compensation
+        if(abs(raw_lx) < 10 && abs(raw_ly) < 10 && !shooting){
+            drift_timer = drift_timer + 1;
+            
+            if(drift_timer > 50){
+                if(abs(raw_rx) < 25 && abs(raw_rx) > 3){
+                    drift_x = raw_rx;
+                }
+                if(abs(raw_ry) < 25 && abs(raw_ry) > 3){
+                    drift_y = raw_ry;
+                }
+            }
+        }
+        else {
+            drift_timer = 0;
+        }
+        
+        rx = raw_rx - drift_x;
+        ry = raw_ry - drift_y;
+        lx = raw_lx;
+        ly = raw_ly;
+        
+        if(abs(rx) < DEADZONE_BASE) rx = 0;
+        if(abs(ry) < DEADZONE_BASE) ry = 0;
+        
+        // Edit mode direct output
+        if(edit_mode){
+            set_val(AXIS_RX, rx);
+            set_val(AXIS_RY, ry);
+        }
+        
+        // State detection
+        ads = (get_val(BTN_ADS) > 30);
+        shooting = (get_val(BTN_SHOOT) > 30);
+        velocity_mag = abs(lx) + abs(ly);
+        
+        // R2-TRIGGERED ASSIST: delay + fade-out tracking
+        if(shooting && !r2_was_pressed) {
+            // R2 just pressed - start delay timer
+            r2_assist_timer = 0;
+            r2_was_pressed = TRUE;
+        }
+        else if(shooting) {
+            // R2 held - count up delay timer
+            if(r2_assist_timer < 150) r2_assist_timer = r2_assist_timer + delta;
+        }
+        else if(r2_was_pressed) {
+            // R2 just released - start fade-out
+            r2_assist_fade_timer = 150;  // 150ms fade
+            r2_was_pressed = FALSE;
+        }
+        
+        // Fade-out countdown
+        if(r2_assist_fade_timer > 0) {
+            r2_assist_fade_timer = r2_assist_fade_timer - delta;
+            if(r2_assist_fade_timer < 0) r2_assist_fade_timer = 0;
+        }
+        
+        // Jump detection
+        if(event_press(BTN_JUMP)) {
+            jump_timer = 1200;
+            aerial_timer = 0;
+            fall_velocity = 0;
+            aerial_offset_y = 0;
+        }
+        
+        if(jump_timer > 0 && get_val(BTN_JUMP) < 30){
+            jump_timer = 0;
+            aerial_timer = 0;
+            fall_velocity = 0;
+            aerial_offset_y = 0;
+        }
+        
+        jumping = (jump_timer > 0);
+        if(jump_timer > (1200 - AERIAL_THRESHOLD)) aerial_mode = 1; else aerial_mode = 0;
+        
+        // Weapon detection - VERBETERD voor one-shots!
+        if(event_press(BTN_SHOOT)){
+            // Bereken interval tussen shots
+            if(last_shot_time > 0){
+                shot_interval = get_rtime() - last_shot_time;
+                
+                // Detecteer weapon type op basis van interval
+                if(shot_interval > WEAPON_SHOTGUN_TIME){
+                    oneshot_mode = 1;  // Shotgun
+                }
+                else if(shot_interval > WEAPON_SNIPER_TIME){
+                    oneshot_mode = 1;  // Sniper
+                }
+                else if(shot_interval < WEAPON_AR_TIME){
+                    oneshot_mode = 0;  // AR/SMG
+                }
+            }
+            
+            last_shot_time = get_rtime();
+            
+            // Sniper mode voor aerial
+            if(shot_timer > SNIPER_DELAY) sniper_mode = 1; else sniper_mode = 0;
+            shot_timer = 1500;
+
+        }
+
+        update_weapon_profile_detection();
+
+        // FLICKSHOT DETECTION - instant max assist!
+        input_spike = abs(input_mag - last_input_mag);
+        if(input_spike > FLICK_THRESHOLD && input_mag > 40){
+            flick_detected = 1;
+            // Reset na 150ms
+            if(delta > FLICK_WINDOW) flick_detected = 0;
+        }
+        else {
+            flick_detected = 0;
+        }
+        last_input_mag = input_mag;
+        
+        // Trickshot detection
+        if((aerial_mode && sniper_mode) || (jumping && velocity_mag > 150)) trickshot_lock = 1;
+        else if(!jumping) trickshot_lock = 0;
+        
+        input_mag = abs(rx) + abs(ry);
+        
+        // Aim assist actief tijdens ADS of schieten
+        if(aim_on && (ads || shooting) && !build_mode && !edit_mode){
+            combo_run(UltimateMaster);
+        }
+    }
+}
+
+// ================ BUBBLE ZONE DETECTION =============
+function update_bubble_state(){
+    bubble_zone_raw = 0;
+    g_chars = 0;
+    while(g_chars < 5){
+        if(distance_pixels <= bubble_zone_edges[g_chars]){
+            bubble_zone_raw = g_chars + 1;
+            break;
+        }
+        g_chars = g_chars + 1;
+    }
+    
+    if(bubble_zone_stable == 0){
+        bubble_zone_stable = bubble_zone_raw;
+    }
+    
+    if(bubble_zone_stable > 0){
+        g_val = get_zone_slider_value(bubble_zone_stable);
+        g_temp = BUBBLE_ENABLE_MARGIN + ((g_val - 50) * BUBBLE_ENABLE_MARGIN) / 100;
+        if(g_temp < 1) g_temp = 1;
+        bubble_inner_radius = bubble_zone_edges[bubble_zone_stable - 1] - g_temp;
+        if(bubble_inner_radius < 0) bubble_inner_radius = 0;
+        
+        g_total = BUBBLE_DISABLE_MARGIN + ((g_val - 50) * BUBBLE_DISABLE_MARGIN) / 100;
+        if(g_total < 1) g_total = 1;
+        bubble_outer_radius = bubble_zone_edges[bubble_zone_stable - 1] + g_total;
+        
+        if(distance_pixels <= bubble_inner_radius){
+            bubble_zone_stable = bubble_zone_stable;  // Stay in current zone
+        } else if(distance_pixels >= bubble_outer_radius){
+            bubble_zone_stable = bubble_zone_raw;
+        }
+    } else {
+        bubble_inner_radius = 0;
+        bubble_outer_radius = 0;
+    }
+    
+    if(bubble_zone_stable == 0 && bubble_zone_raw > 0){
+        bubble_zone_stable = bubble_zone_raw;
+    }
+    
+    bubble_zone = bubble_zone_stable;
+}
+
+// ================ RANGE DETECTION ===================
+// CRITICAL: Use distance_pixels (screen-space) not input_mag (stick magnitude)!
+// input_mag is LOW when locked (stick centered), maar distance kan GROOT zijn!
+// Dit zorgt dat long/med sliders correct werken op alle ranges!
+function get_current_range(){
+    // Range based on screen-space distance (pixels from center)
+    if(distance_pixels <= 25){
+        current_range = 0;  // SHORT: 0-25px (close combat)
+    }
+    else if(distance_pixels <= 50){
+        current_range = 1;  // MEDIUM: 25-50px (mid-range)
+    }
+    else {
+        current_range = 2;  // LONG: 50+px (long-range)
+    }
+}
+
+// =============== TARGET LOCK DETECTION ==============
+// HYSTERESIS toegevoegd: voorkomt oscillatie!
+function update_target_lock(){
+    delta_rx = abs(rx - last_rx);
+        delta_ry = abs(ry - last_ry);
+    tk_combined_delta = delta_rx + delta_ry;
+
+
+    input_mag = abs(rx) + abs(ry);
+    aim_error_pixels = distance_pixels;
+    distance_delta = distance_pixels - last_distance_pixels;
+
+    aim_error_avg = smooth_gain(aim_error_avg, aim_error_pixels, 20);
+    aim_error_trend = smooth_gain(aim_error_trend, distance_delta, 20);
+    velocity_avg = smooth_gain(velocity_avg, input_mag, 20);
+
+    tk_proximity_score = 100 - soft_step(aim_error_pixels, BUBBLE_ULTRA_CLOSE, BUBBLE_OUTER);
+    if(tk_proximity_score < 0) tk_proximity_score = 0;
+    assist_last_proximity_score = tk_proximity_score;
+    tk_stability_score = 100 - soft_step(tk_combined_delta, 8, 45);
+    if(tk_stability_score < 0) tk_stability_score = 0;
+    tk_trend_score = 100 - soft_step(abs(distance_delta), 5, 35);
+    if(tk_trend_score < 0) tk_trend_score = 0;
+    tk_timer_score = soft_step(lock_timer, LOCK_TIMER_MIN, LOCK_TIMER_STABLE);
+
+    aim_error_variance = smooth_gain(aim_error_variance, abs(aim_error_pixels - aim_error_avg), 35);
+
+    tk_raw_lock_conf = (tk_proximity_score * 45 + tk_stability_score * 25 + tk_trend_score * 15 + tk_timer_score * 15) / 100;
+    tk_raw_lock_conf = clamp_i(tk_raw_lock_conf, 0, 100);
+
+    if(oneshot_mode || flick_detected || shooting){
+        if(tk_raw_lock_conf < 80) tk_raw_lock_conf = 80;
+    }
+
+    g_temp = 30;
+    if(target_locked) g_temp = 12;
+    lock_confidence = smooth_gain(lock_confidence, tk_raw_lock_conf, g_temp);
+
+    lock_confidence = clamp_i(lock_confidence, 0, 100);
+
+    if(lock_confidence >= 55){
+        if(!target_locked){
+            target_locked = 1;
+            lock_timer = 0;
+            if(oneshot_mode || flick_detected){
+                hyper_burst_active = 1;
+                hyper_burst_timer = 0;
+            }
+        } else {
+            if(lock_timer < LOCK_TIMER_MAX) lock_timer = lock_timer + 1;
+        }
+    }
+    else if(lock_confidence <= 20){
+        target_locked = 0;
+        lock_timer = 0;
+        hyper_burst_active = 0;
+    }
+    
+    if(target_locked){
+        if(lock_confidence >= 90){
+            lock_strength = 100;
+        }
+        else if(lock_confidence >= 70){
+            lock_strength = 85 + ((lock_confidence - 70) * 15) / 20;
+        }
+        else {
+            lock_strength = 70 + ((lock_confidence - 55) * 15) / 15;
+        }
+        lock_strength = clamp_i(lock_strength, 60, 100);
+    }
+    else {
+        lock_strength = clamp_i(lock_confidence, 0, 75);
+    }
+
+    last_rx = rx;
+    last_ry = ry;
+    last_distance_pixels = distance_pixels;
+}
+
+// =============== SCREEN-SPACE CONVERSION ==============
+function update_screen_space(){
+    // Convert rx/ry to screen pixels from center
+    pixel_offset_x = (rx * SCREEN_WIDTH) / 200;
+    pixel_offset_y = (ry * SCREEN_HEIGHT) / 200;
+    
+    // Calculate distance in pixels (Pythagoras)
+    distance_pixels = isqrt_custom((pixel_offset_x * pixel_offset_x) + (pixel_offset_y * pixel_offset_y));
+    
+    // Hyper-burst maakt bubble 2x groter voor one-shots!
+    if(hyper_burst_active){
+        distance_pixels = (distance_pixels * 100) / HYPER_BUBBLE_MULTI;
+    }
+}
+
+// =============== MULTI-ZONE WEIGHTED SYSTEM ==============
+function update_weighted_zones(){
+    // Reset weights
+    zone_weight_ultra = 0;
+    zone_weight_close = 0;
+    zone_weight_mid = 0;
+    zone_weight_far = 0;
+    
+    // Weighted blending tussen zones (smooth transitions!)
+    if(distance_pixels <= BUBBLE_ZONE_ULTRA){
+        zone_weight_ultra = 100;
+    }
+    else if(distance_pixels <= BUBBLE_ZONE_CLOSE){
+        zone_weight_ultra = 100 - (((distance_pixels - BUBBLE_ZONE_ULTRA) * 100) / (BUBBLE_ZONE_CLOSE - BUBBLE_ZONE_ULTRA));
+        zone_weight_close = 100 - zone_weight_ultra;
+    }
+    else if(distance_pixels <= BUBBLE_ZONE_MID){
+        zone_weight_close = 100 - (((distance_pixels - BUBBLE_ZONE_CLOSE) * 100) / (BUBBLE_ZONE_MID - BUBBLE_ZONE_CLOSE));
+        zone_weight_mid = 100 - zone_weight_close;
+    }
+    else if(distance_pixels <= BUBBLE_ZONE_FAR){
+        zone_weight_mid = 100 - (((distance_pixels - BUBBLE_ZONE_MID) * 100) / (BUBBLE_ZONE_FAR - BUBBLE_ZONE_MID));
+        zone_weight_far = 100 - zone_weight_mid;
+    }
+    else if(distance_pixels <= BUBBLE_ZONE_OUTER){
+        zone_weight_far = 100 - (((distance_pixels - BUBBLE_ZONE_FAR) * 100) / (BUBBLE_ZONE_OUTER - BUBBLE_ZONE_FAR));
+    }
+}
+
+// =============== LEFT-STICK ROTATION GATE ==============
+function update_rotation_gate(){
+    // Bereken strafe velocity (left stick + VIRTUAL strafe!)
+    // Virtual strafe wordt toegevoegd voor magnetic mode calculation
+    strafe_velocity = abs(lx + virtual_strafe_x) + abs(ly + virtual_strafe_y);
+    
+    // Rotation ALLEEN actief bij strafe OF micro aim movements
+    // Virtual strafe zorgt dat dit ALTIJD triggered bij magnetic mode!
+    if(strafe_velocity > ROTATION_STRAFE_GATE || (input_mag > 5 && input_mag < 25)){
+        rotation_active = 1;
+    }
+    else {
+        rotation_active = 0;
+    }
+
+    if(hipfire_sticky_active){
+        rotation_active = 1;
+    }
+}
+
+// =============== PREDICTIVE LAZY AIM ==============
+function update_predictive_aim_legacy(){
+    enemy_velocity_prev_x = enemy_velocity_x;
+    enemy_velocity_prev_y = enemy_velocity_y;
+
+    enemy_velocity_x = pixel_offset_x - last_pixel_x;
+    enemy_velocity_y = pixel_offset_y - last_pixel_y;
+
+    enemy_accel_x = enemy_velocity_x - enemy_velocity_prev_x;
+    enemy_accel_y = enemy_velocity_y - enemy_velocity_prev_y;
+
+    enemy_velocity_hist_x[enemy_hist_index] = enemy_velocity_x;
+    enemy_velocity_hist_y[enemy_hist_index] = enemy_velocity_y;
+
+    enemy_hist_index = enemy_hist_index + 1;
+    if(enemy_hist_index >= PRED_BUFFER_SIZE) enemy_hist_index = 0;
+
+    if(enemy_hist_count < PRED_BUFFER_SIZE) enemy_hist_count = enemy_hist_count + 1;
+
+    enemy_velocity_avg_prev_x = enemy_velocity_avg_x;
+    enemy_velocity_avg_prev_y = enemy_velocity_avg_y;
+
+    g_chars = 0;
+    g_total = 0;
+    while(g_chars < enemy_hist_count){
+        g_total = g_total + enemy_velocity_hist_x[g_chars];
+        g_chars = g_chars + 1;
+    }
+    if(enemy_hist_count > 0){
+        g_temp = g_total / enemy_hist_count;
+    } else {
+        g_temp = enemy_velocity_x;
+    }
+    enemy_velocity_avg_x = smooth_gain(enemy_velocity_avg_x, g_temp, PRED_VELOCITY_SMOOTH_GAIN);
+
+    g_chars = 0;
+    g_total = 0;
+    while(g_chars < enemy_hist_count){
+        g_total = g_total + enemy_velocity_hist_y[g_chars];
+        g_chars = g_chars + 1;
+    }
+    if(enemy_hist_count > 0){
+        g_temp = g_total / enemy_hist_count;
+    } else {
+        g_temp = enemy_velocity_y;
+    }
+    enemy_velocity_avg_y = smooth_gain(enemy_velocity_avg_y, g_temp, PRED_VELOCITY_SMOOTH_GAIN);
+
+    g_temp = enemy_velocity_avg_x - enemy_velocity_avg_prev_x;
+    enemy_accel_avg_x = smooth_gain(enemy_accel_avg_x, g_temp, PRED_ACCEL_SMOOTH_GAIN);
+    g_temp = enemy_velocity_avg_y - enemy_velocity_avg_prev_y;
+    enemy_accel_avg_y = smooth_gain(enemy_accel_avg_y, g_temp, PRED_ACCEL_SMOOTH_GAIN);
+
+    g_temp = enemy_accel_avg_x * enemy_accel_avg_x;
+    g_total = enemy_accel_avg_y * enemy_accel_avg_y;
+    enemy_accel_avg_mag = isqrt_custom((g_temp + g_total));
+    if(enemy_accel_avg_mag > 160) enemy_accel_avg_mag = 160;
+
+    g_total = 100 - PRED_HISTORY_BLEND;
+    enemy_velocity_blend_x = ((enemy_velocity_avg_x * PRED_HISTORY_BLEND) + (enemy_velocity_x * g_total)) / 100;
+    enemy_velocity_blend_y = ((enemy_velocity_avg_y * PRED_HISTORY_BLEND) + (enemy_velocity_y * g_total)) / 100;
+    enemy_accel_blend_x = ((enemy_accel_avg_x * PRED_HISTORY_BLEND) + (enemy_accel_x * g_total)) / 100;
+    enemy_accel_blend_y = ((enemy_accel_avg_y * PRED_HISTORY_BLEND) + (enemy_accel_y * g_total)) / 100;
+
+    g_temp = enemy_accel_blend_x * enemy_accel_blend_x;
+    g_total = enemy_accel_blend_y * enemy_accel_blend_y;
+    enemy_accel_mag = isqrt_custom((g_temp + g_total));
+    if(enemy_accel_mag > 160) enemy_accel_mag = 160;
+
+    g_temp = enemy_velocity_blend_x * enemy_velocity_blend_x;
+    g_temp = enemy_velocity_blend_x * enemy_velocity_blend_x;
+    g_total = enemy_velocity_blend_y * enemy_velocity_blend_y;
+    enemy_speed_mag = isqrt_custom((g_temp + g_total));
+    if(enemy_speed_mag > 160) enemy_speed_mag = 160;
+
+    predict_horizon_target = 4 + (lock_confidence * 6) / 100;
+    if(predict_horizon_target < PRED_HORIZON_MIN) predict_horizon_target = PRED_HORIZON_MIN;
+    if(predict_horizon_target > 10) predict_horizon_target = 10;
+
+    g_val = slider_smoothness - 50;
+    if(g_val != 0){
+        predict_horizon_target = predict_horizon_target + (g_val / 25);
+    }
+    if(predict_horizon_target < PRED_HORIZON_MIN) predict_horizon_target = PRED_HORIZON_MIN;
+    if(predict_horizon_target > PRED_HORIZON_MAX) predict_horizon_target = PRED_HORIZON_MAX;
+
+    g_total = abs(enemy_velocity_blend_x) + abs(enemy_velocity_blend_y);
+    if(g_total > 120){
+        predict_horizon_target = (predict_horizon_target * 70) / 100;
+    } else if(g_total < 35){
+        predict_horizon_target = (predict_horizon_target * 120) / 100;
+    }
+    if(predict_horizon_target < PRED_HORIZON_MIN) predict_horizon_target = PRED_HORIZON_MIN;
+    if(predict_horizon_target > PRED_HORIZON_MAX) predict_horizon_target = PRED_HORIZON_MAX;
+
+    if(enemy_accel_mag > PRED_ACCEL_VARIANCE_GATE){
+        g_chars = enemy_accel_mag - PRED_ACCEL_VARIANCE_GATE;
+        if(g_chars > PRED_ACCEL_VARIANCE_CLAMP) g_chars = PRED_ACCEL_VARIANCE_CLAMP;
+        g_expected = 100 - g_chars;
+        if(g_expected < 30) g_expected = 30;
+        predict_horizon_target = (predict_horizon_target * g_expected) / 100;
+    }
+
+    if(enemy_accel_avg_mag < 15 && enemy_speed_mag < 45){
+        predict_horizon_target = (predict_horizon_target * 120) / 100;
+    }
+
+    if(oneshot_mode){
+        predict_horizon_target = predict_horizon_target + 1;
+    }
+
+    if(predict_horizon_target < PRED_HORIZON_MIN) predict_horizon_target = PRED_HORIZON_MIN;
+    if(predict_horizon_target > PRED_HORIZON_MAX) predict_horizon_target = PRED_HORIZON_MAX;
+
+    if(predict_horizon_frames <= 0){
+        predict_horizon_frames = predict_horizon_target;
+    } else {
+        predict_horizon_frames = smooth_gain(predict_horizon_frames, predict_horizon_target, PRED_HORIZON_SMOOTH_GAIN);
+    }
+    if(predict_horizon_frames < PRED_HORIZON_MIN) predict_horizon_frames = PRED_HORIZON_MIN;
+    if(predict_horizon_frames > PRED_HORIZON_MAX) predict_horizon_frames = PRED_HORIZON_MAX;
+
+    g_val = (predict_horizon_frames * (predict_horizon_frames + 1)) / 2;
+    if(g_val < 1) g_val = 1;
+
+    g_temp = enemy_velocity_blend_x * predict_horizon_frames;
+    g_total = (enemy_accel_blend_x * g_val * PRED_ACCEL_GAIN) / 100;
+    predict_offset_x = pixel_offset_x + g_temp + g_total;
+
+    g_temp = enemy_velocity_blend_y * predict_horizon_frames;
+    g_temp = enemy_velocity_blend_x * enemy_velocity_blend_x;
+    g_total = enemy_velocity_blend_y * enemy_velocity_blend_y;
+    enemy_speed_mag = isqrt_custom(g_temp + g_total);
+    if(enemy_speed_mag > 160) enemy_speed_mag = 160;
+
+    predict_horizon_frames = 4 + (lock_confidence * 6) / 100;
+    if(predict_horizon_frames < 2) predict_horizon_frames = 2;
+    if(predict_horizon_frames > 10) predict_horizon_frames = 10;
+
+    g_val = slider_smoothness - 50;
+    if(g_val != 0){
+        predict_horizon_frames = predict_horizon_frames + (g_val / 25);
+    }
+    if(predict_horizon_frames < 2) predict_horizon_frames = 2;
+    if(predict_horizon_frames > 12) predict_horizon_frames = 12;
+
+    g_total = abs(enemy_velocity_blend_x) + abs(enemy_velocity_blend_y);
+    if(g_total > 120){
+        predict_horizon_frames = (predict_horizon_frames * 70) / 100;
+    } else if(g_total < 35){
+        predict_horizon_frames = (predict_horizon_frames * 120) / 100;
+    }
+    if(predict_horizon_frames < 2) predict_horizon_frames = 2;
+    if(predict_horizon_frames > 12) predict_horizon_frames = 12;
+
+    g_val = (predict_horizon_frames * (predict_horizon_frames + 1)) / 2;
+    if(g_val < 1) g_val = 1;
+
+    g_temp = enemy_velocity_blend_x * predict_horizon_frames;
+    g_total = (enemy_accel_blend_x * g_val * PRED_ACCEL_GAIN) / 100;
+    predict_offset_x = pixel_offset_x + g_temp + g_total;
+
+    g_temp = enemy_velocity_blend_y * predict_horizon_frames;
+    if(predict_horizon_frames < 2) predict_horizon_frames = 2;
+    if(predict_horizon_frames > 10) predict_horizon_frames = 10;
+
+    g_val = slider_smoothness - 50;
+    if(g_val != 0){
+        predict_horizon_frames = predict_horizon_frames + (g_val / 25);
+    }
+    if(predict_horizon_frames < 2) predict_horizon_frames = 2;
+    if(predict_horizon_frames > 12) predict_horizon_frames = 12;
+
+    g_total = abs(enemy_velocity_blend_x) + abs(enemy_velocity_blend_y);
+    if(g_total > 120){
+        predict_horizon_frames = (predict_horizon_frames * 70) / 100;
+    } else if(g_total < 35){
+        predict_horizon_frames = (predict_horizon_frames * 120) / 100;
+    }
+    if(predict_horizon_frames < 2) predict_horizon_frames = 2;
+    if(predict_horizon_frames > 12) predict_horizon_frames = 12;
+
+    if(lock_strength >= LAZY_AIM_MIN_LOCK && target_locked){
+        pred_weapon_mult = PRED_AR_MULT;
+        if(oneshot_mode){
+            pred_weapon_mult = PRED_ONESHOT_MULT;
+        } else if(sniper_mode){
+            pred_weapon_mult = PRED_SNIPER_MULT;
+        }
+        if(aerial_mode){
+            pred_weapon_mult = (pred_weapon_mult * PRED_AERIAL_MULT) / 100;
+        }
+        if(pred_weapon_mult < 60) pred_weapon_mult = 60;
+        if(pred_weapon_mult > 180) pred_weapon_mult = 180;
+
+        predictive_bias_strength = LAZY_AIM_BIAS;
+        predictive_bias_strength = (predictive_bias_strength * (40 + lock_confidence)) / 100;
+        predictive_bias_strength = (predictive_bias_strength * (60 + assist_core_blend)) / 100;
+        predictive_bias_strength = (predictive_bias_strength * pred_weapon_mult) / 100;
+        predictive_bias_strength = (predictive_bias_strength * (80 + enemy_stability_pct)) / 100;
+        predictive_bias_strength = (predictive_bias_strength * weapon_gain_core_mix) / 100;
+        if(predictive_bias_strength < 6) predictive_bias_strength = 6;
+        if(predictive_bias_strength > 80) predictive_bias_strength = 80;
+
+        g_val = (predict_horizon_frames * (predict_horizon_frames + 1)) / 2;
+        if(g_val < 1) g_val = 1;
+
+        g_temp = enemy_velocity_blend_x * predict_horizon_frames;
+        g_total = (enemy_accel_blend_x * g_val * PRED_ACCEL_GAIN) / 100;
+        predict_offset_x = pixel_offset_x + g_temp + g_total;
+
+        g_temp = enemy_velocity_blend_y * predict_horizon_frames;
+        g_expected = (enemy_accel_blend_y * g_val * PRED_ACCEL_GAIN) / 100;
+        g_chars = (enemy_velocity_blend_y * PRED_VERTICAL_GAIN) / 100;
+        predict_offset_y = pixel_offset_y + g_temp + g_expected + g_chars;
+
+        lazy_bias_x = ((predict_offset_x - pixel_offset_x) * predictive_bias_strength) / 100;
+        lazy_bias_y = ((predict_offset_y - pixel_offset_y) * predictive_bias_strength) / 100;
+
+        g_temp = 50 + slider_rotation;
+        lazy_bias_x = (lazy_bias_x * g_temp) / 100;
+        lazy_bias_y = (lazy_bias_y * g_temp) / 100;
+
+        g_total = 100 + (enemy_speed_mag * VELOCITY_FOLLOW_STRENGTH) / 200;
+        if(g_total < 80) g_total = 80;
+        if(g_total > 160) g_total = 160;
+        lazy_bias_x = (lazy_bias_x * g_total) / 100;
+        lazy_bias_y = (lazy_bias_y * g_total) / 100;
+
+        lazy_bias_cap_x = 10 + (assist_rotation_blend / 4);
+        lazy_bias_cap_y = 8 + (assist_rotation_blend / 6);
+        if(lazy_bias_cap_x < 8) lazy_bias_cap_x = 8;
+        if(lazy_bias_cap_x > 32) lazy_bias_cap_x = 32;
+        if(lazy_bias_cap_y < 8) lazy_bias_cap_y = 8;
+        if(lazy_bias_cap_y > 28) lazy_bias_cap_y = 28;
+
+        if(oneshot_mode){
+            lazy_bias_cap_x = (lazy_bias_cap_x * 12) / 10;
+            lazy_bias_cap_y = (lazy_bias_cap_y * 12) / 10;
+        }
+
+        if(lazy_bias_x > lazy_bias_cap_x) lazy_bias_x = lazy_bias_cap_x;
+        if(lazy_bias_x < 0 - lazy_bias_cap_x) lazy_bias_x = 0 - lazy_bias_cap_x;
+        if(lazy_bias_y > lazy_bias_cap_y) lazy_bias_y = lazy_bias_cap_y;
+        if(lazy_bias_y < 0 - lazy_bias_cap_y) lazy_bias_y = 0 - lazy_bias_cap_y;
+    }
+    else {
+        predict_offset_x = pixel_offset_x;
+        predict_offset_y = pixel_offset_y;
+        lazy_bias_x = 0;
+        lazy_bias_y = 0;
+    }
+
+    last_pixel_x = pixel_offset_x;
+    last_pixel_y = pixel_offset_y;
+
+    if(enemy_speed_mag > 0){
+        enemy_dir_x = (enemy_velocity_blend_x * 100) / enemy_speed_mag;
+        enemy_dir_y = (enemy_velocity_blend_y * 100) / enemy_speed_mag;
+        enemy_dir_x = clamp_i(enemy_dir_x, -100, 100);
+        enemy_dir_y = clamp_i(enemy_dir_y, -100, 100);
+    } else {
+        enemy_dir_x = 0;
+        enemy_dir_y = 0;
+    }
+
+    enemy_velocity_avg_prev_x = enemy_velocity_avg_x;
+    enemy_velocity_avg_prev_y = enemy_velocity_avg_y;
+    enemy_velocity_prev_x = enemy_velocity_x;
+    enemy_velocity_prev_y = enemy_velocity_y;
+}
+
+function update_assist_core(){
+    // GPC FIX: No local variables! Use globals g_val, g_temp, g_p, etc.
+    
+    if(input_velocity >= INPUT_VELOCITY_PANIC){
+        panic_triggered = 250;
+    }
+    if(panic_triggered > 0){
+        panic_triggered = panic_triggered - delta;
+        if(panic_triggered < 0) panic_triggered = 0;
+    }
+
+    g_val = 100 - soft_step(aim_error_pixels, BUBBLE_ULTRA_CLOSE, BUBBLE_OUTER);
+    if(g_val < 0) g_val = 0;
+    assist_last_proximity_score = g_val;
+
+    g_temp = abs(aim_error_trend);
+    g_p = 100 - soft_step(g_temp, 3, 30);
+    if(g_p < 0) g_p = 0;
+
+    g_tboost = 100 - soft_step(abs(distance_delta), 4, 35);
+    if(g_tboost < 0) g_tboost = 0;
+
+    g_expected = INPUT_VELOCITY_FAST_HIP;
+    if(ads) g_expected = INPUT_VELOCITY_FAST_ADS;
+    g_fill = soft_step(input_velocity, 12, g_expected);
+    if(g_fill < 0) g_fill = 0;
+
+    g_chars = (lock_confidence * 50 + g_val * 20 + g_p * 15 + (100 - g_fill) * 15) / 100;
+
+    if(!target_locked && g_val > 70 && g_fill < 40){
+        if(g_chars < 25) g_chars = 25;
+    }
+
+    if(ads) g_chars = clamp_i(g_chars + 8, 0, 100);
+
+    if(panic_triggered > 0){
+        g_expected = soft_step(panic_triggered, 1, 250);
+        g_chars = (g_chars * (100 - g_expected)) / 100;
+    }
+
+    assist_core_blend = smooth_gain(assist_core_blend, g_chars, 18);
+    assist_core_blend = clamp_i(assist_core_blend, 0, 100);
+
+    // Phase C refinement: Error Variance Stability Score (VSS) for smooth snap blending
+    g_expected = 100 - soft_step(aim_error_variance, 6, 40); // 100 = Stable (low variance), 0 = Volatile (high variance)
+    if(g_expected < 0) g_expected = 0;
+
+    g_total = (assist_core_blend * 60 + g_val * 25 + (100 - g_fill) * 15) / 100;
+    if(!ads) g_total = (g_total * 85) / 100;
+    g_total = clamp_i(g_total, 0, 100);
+
+    range_slider = assist_core_blend;
+    if(rotation_active || strafe_active) range_slider = clamp_i(range_slider + 15, 0, 100);
+    range_slider = range_slider - (g_fill / 2);
+    if(range_slider < 0) range_slider = 0;
+    range_slider = clamp_i(range_slider, 0, 100);
+
+    // Snap Blend Target (Refined Phase C: Core Blend, Proximity, VSS, Trend Stability)
+    // g_expected holds the VSS (aim_error_variance stability) from before g_total calculation
+    g_temp = (assist_core_blend * 50 + g_val * 20 + g_expected * 15 + g_tboost * 15) / 100;
+    if(flick_detected) g_temp = clamp_i(g_temp + 30, 0, 100);
+    g_temp = clamp_i(g_temp, 0, 100);
+
+    assist_slowdown_blend = smooth_gain(assist_slowdown_blend, g_total, 18);
+    assist_rotation_blend = smooth_gain(assist_rotation_blend, range_slider, 18);
+    assist_snap_blend = smooth_gain(assist_snap_blend, g_temp, 18);
+}
+
+function detect_assist_state(){
+    g_val = aim_error_trend; // trend_abs
+    if(g_val < 0) g_val = 0 - g_val;
+    g_temp = distance_delta; // delta_abs
+    if(g_temp < 0) g_temp = 0 - g_temp;
+    g_p = assist_last_proximity_score; // proximity_score
+    g_fill = input_velocity; // velocity_score
+    g_tboost = lock_confidence; // lock_score
+    g_expected = aim_state_current; // candidate
+    // Using global temps for flags to ensure GPC compatibility
+    g_val = 0; // acquire_flag 
+    g_temp = 0; // correct_flag
+    g_p = 0; // recenter_flag
+    g_fill = 0; // track_flag
+
+    if(!target_locked){
+        g_expected = AIM_STATE_ACQUIRE;
+    } else {
+        if(g_tboost <= AIM_ACQUIRE_LOCK_MAX || (g_tboost < 70 && aim_error_pixels > AIM_CORRECT_ERROR_MIN)){
+            g_val = 1; // acquire_flag = 1
+        }
+        if(aim_error_pixels >= AIM_CORRECT_ERROR_MIN) g_temp = 1; // correct_flag = 1
+        if(g_val >= AIM_CORRECT_DELTA_MIN) g_temp = 1; // correct_flag = 1
+        if(sticky_edge_weight >= AIM_CORRECT_EDGE_WEIGHT) g_temp = 1; // correct_flag = 1
+
+        if(g_p >= AIM_RECENTER_ZONE_MIN && g_val <= AIM_RECENTER_TREND_MAX && g_temp <= AIM_RECENTER_TREND_MAX){
+            if(aim_state_current == AIM_STATE_RECENTER || aim_state_timer >= AIM_RECENTER_STABLE_TIME){
+                g_p = 1; // recenter_flag = 1
+            }
+        }
+
+        if(g_tboost > AIM_ACQUIRE_LOCK_MAX && aim_error_pixels <= AIM_TRACK_ERROR_MAX && g_fill <= AIM_TRACK_VELOCITY_MAX){
+            g_fill = 1; // track_flag = 1
+        }
+
+        if(g_p){ // if(recenter_flag)
+            g_expected = AIM_STATE_RECENTER;
+        } else if(g_temp){ // if(correct_flag)
+            g_expected = AIM_STATE_CORRECT;
+        } else if(g_fill){ // if(track_flag)
+            g_expected = AIM_STATE_TRACK;
+        } else if(g_val){ // if(acquire_flag)
+            g_expected = AIM_STATE_ACQUIRE;
+        } else if(g_tboost > AIM_ACQUIRE_LOCK_MAX){
+            g_expected = AIM_STATE_TRACK;
+        } else {
+            g_expected = AIM_STATE_ACQUIRE;
+        }
+    }
+
+    if(g_expected != aim_state_current){
+        aim_state_current = g_expected;
+        aim_state_timer = 0;
+    } else {
+        if(aim_state_timer < 10000){
+            aim_state_timer = aim_state_timer + delta;
+            if(aim_state_timer > 10000) aim_state_timer = 10000;
+        }
+    }
+
+    // target_weight vervangen door g_total om GPC-fout op lijn 2011 op te lossen.
+
+    if(aim_state_current == AIM_STATE_ACQUIRE) g_total = 100; else g_total = 0;
+    aim_state_weight_acquire = smooth_gain(aim_state_weight_acquire, g_total, AIM_STATE_BLEND_GAIN);
+
+    if(aim_state_current == AIM_STATE_TRACK) g_total = 100; else g_total = 0;
+    aim_state_weight_track = smooth_gain(aim_state_weight_track, g_total, AIM_STATE_BLEND_GAIN);
+
+    if(aim_state_current == AIM_STATE_CORRECT) g_total = 100; else g_total = 0;
+    aim_state_weight_correct = smooth_gain(aim_state_weight_correct, g_total, AIM_STATE_BLEND_GAIN);
+
+    if(aim_state_current == AIM_STATE_RECENTER) g_total = 100; else g_total = 0;
+    aim_state_weight_recenter = smooth_gain(aim_state_weight_recenter, g_total, AIM_STATE_BLEND_GAIN);
+
+    // weight_sum vervangen door g_p
+    g_p = aim_state_weight_acquire + aim_state_weight_track + aim_state_weight_correct + aim_state_weight_recenter;
+    if(g_p < 1) g_p = 1;
+
+    aim_state_core_pct = clamp_i(
+        (AIM_ACQUIRE_CORE_PCT * aim_state_weight_acquire +
+         AIM_TRACK_CORE_PCT * aim_state_weight_track +
+         AIM_CORRECT_CORE_PCT * aim_state_weight_correct +
+         AIM_RECENTER_CORE_PCT * aim_state_weight_recenter) / g_p,
+        40, 160);
+
+    aim_state_slowdown_pct = clamp_i(
+        (AIM_ACQUIRE_SLOWDOWN_PCT * aim_state_weight_acquire +
+         AIM_TRACK_SLOWDOWN_PCT * aim_state_weight_track +
+         AIM_CORRECT_SLOWDOWN_PCT * aim_state_weight_correct +
+         AIM_RECENTER_SLOWDOWN_PCT * aim_state_weight_recenter) / g_p,
+        40, 185);
+
+    aim_state_rotation_pct = clamp_i(
+        (AIM_ACQUIRE_ROTATION_PCT * aim_state_weight_acquire +
+         AIM_TRACK_ROTATION_PCT * aim_state_weight_track +
+         AIM_CORRECT_ROTATION_PCT * aim_state_weight_correct +
+         AIM_RECENTER_ROTATION_PCT * aim_state_weight_recenter) / g_p,
+        40, 185);
+
+    aim_state_snap_pct = clamp_i(
+        (AIM_ACQUIRE_SNAP_PCT * aim_state_weight_acquire +
+         AIM_TRACK_SNAP_PCT * aim_state_weight_track +
+         AIM_CORRECT_SNAP_PCT * aim_state_weight_correct +
+         AIM_RECENTER_SNAP_PCT * aim_state_weight_recenter) / g_p,
+        40, 185);
+
+    aim_state_resistance_pct = clamp_i(
+        (AIM_ACQUIRE_RESIST_PCT * aim_state_weight_acquire +
+         AIM_TRACK_RESIST_PCT * aim_state_weight_track +
+         AIM_CORRECT_RESIST_PCT * aim_state_weight_correct +
+         AIM_RECENTER_RESIST_PCT * aim_state_weight_recenter) / g_p,
+        40, 200);
+
+    aim_state_auto_pull_pct = clamp_i(
+        (AIM_ACQUIRE_AUTOPULL_PCT * aim_state_weight_acquire +
+         AIM_TRACK_AUTOPULL_PCT * aim_state_weight_track +
+         AIM_CORRECT_AUTOPULL_PCT * aim_state_weight_correct +
+         AIM_RECENTER_AUTOPULL_PCT * aim_state_weight_recenter) / g_p,
+        40, 200);
+
+    assist_core_blend = clamp_i((assist_core_blend * aim_state_core_pct) / 100, 0, 100);
+    assist_slowdown_blend = clamp_i((assist_slowdown_blend * aim_state_slowdown_pct) / 100, 0, 100);
+    assist_rotation_blend = clamp_i((assist_rotation_blend * aim_state_rotation_pct) / 100, 0, 100);
+    assist_snap_blend = clamp_i((assist_snap_blend * aim_state_snap_pct) / 100, 0, 100);
+}
+
+// ================ STRAFE DETECTION ==================
+function update_strafe_detection(){
+    velocity_mag = abs(lx) + abs(ly);
+    
+    if(velocity_mag >= STRAFE_THRESHOLD){
+        strafe_active = 1;
+    }
+    else {
+        strafe_active = 0;
+    }
+}
+
+// ========== ASSIST AMPLIFICATION (V3.0 RE-ENABLED - OPTIMIZED!) ==========
+// OPLOSSING: Subtielere micro-orbit werkt NU SAMEN met Fortnite's aim assist!
+// - Kleinere left-stick inject (6-12 units) TRIGGERT Fortnite's rotational assist
+// - Geoptimaliseerde motion vult rotation pull aan → super smooth
+// - Gecontroleerde beweging voorkomt weapon fire delays
+// RESULTAAT: INGESCHAKELD - perfect samenspel tussen alle systemen!
+function update_assist_amplification(){
+    // RE-ENABLED V3.0 - micro-orbit triggert Fortnite rotation assist!
+    // GEEN return meer - volledig functioneel!
+    
+    // OUDE CODE (bewaard voor referentie):
+    // Gate: target locked + slider enabled (BOTH hipfire AND ADS!)
+    // Fortnite's rotational assist werkt in BEIDE modes!
+    if(!target_locked || slider_strength == 0 || build_mode || edit_mode){
+        micro_orbit_index = 0;  // Reset orbit
+        micro_orbit_timer = 0;
+        micro_orbit_variation_timer = 0;
+        micro_orbit_direction = 1;
+        virtual_strafe_x = 0;
+        virtual_strafe_y = 0;
+        return;
+    }
+    
+    // SIMPLIFIED: Als target locked, ga gewoon micro-orbit doen!
+    // De micro-orbit TRIGGERT Fortnite's rotational assist via rotation gate
+    // Dit is het ECHTE mechanisme: orbit → left stick velocity → Fortnite's rotational assist!
+    
+    // Bereken engagement strength op basis van proximity + lock quality
+    // Dit schaalt de INTENSITEIT van de orbit, niet of het actief is
+    bubble_weight_factor = ((zone_weight_ultra * 100) / 100) +
+                          ((zone_weight_close * 70) / 100) +
+                          ((zone_weight_mid * 40) / 100) +
+                          ((zone_weight_far * 15) / 100);
+    
+    assist_engagement_signal = ((bubble_weight_factor * 50) / 100) +
+                               ((lock_strength * 50) / 100);
+    
+    if(assist_engagement_signal > 100) assist_engagement_signal = 100;
+    
+    // Minimum 40% engagement (maar dit wordt later ge-boosted naar 90% voor rotation gate!)
+    if(assist_engagement_signal < 40) assist_engagement_signal = 40;
+    
+    // === STAP 2: MICRO-ORBIT GENERATION ===
+    // Kleine circulaire beweging OM de target heen (blijft IN bubble!)
+    
+    // TIMED INCREMENT: dynamic interval met jitter voor natuurlijke variatie
+    micro_orbit_timer = micro_orbit_timer - 4;
+    if(micro_orbit_timer <= 0){
+        micro_orbit_index = micro_orbit_index + micro_orbit_direction;
+        if(micro_orbit_index >= 16) micro_orbit_index = 0;
+        if(micro_orbit_index < 0) micro_orbit_index = 15;
+        micro_orbit_timer = micro_orbit_interval_ms;
+        if(micro_orbit_timer < 4) micro_orbit_timer = 4;
+    }
+
+    micro_orbit_variation_timer = micro_orbit_variation_timer - 4;
+    if(micro_orbit_variation_timer <= 0){
+        g_val = clamp_i(slider_smoothness, 0, 100);
+        g_temp = clamp_i(lock_confidence, 0, 100);
+        g_total = 8 + (g_val * 8) / 100;
+        g_expected = (g_temp * 6) / 100;
+        g_total = g_total - g_expected;
+        if(g_total < 6) g_total = 6;
+        if(g_total > 18) g_total = 18;
+
+        g_chars = clamp_i(100 - slider_smoothness, 0, 100);
+        g_p = clamp_i(100 - lock_confidence, 0, 100);
+        g_fill = 1 + (g_chars / 35) + (g_p / 40);
+        if(enemy_speed_mag > 70){
+            g_total = g_total - 1;
+            if(g_total < 5) g_total = 5;
+            g_fill = g_fill + 1;
+        }
+        if(g_fill > 4) g_fill = 4;
+
+        micro_orbit_interval_ms = clamp_i(g_total + waveform_rand_signed(g_fill), 5, 20);
+
+        g_expected = 20 + (g_p / 3) + (g_chars / 4);
+        if(g_expected > 60) g_expected = 60;
+        if(waveform_rand_range(0, 99) < g_expected){
+            micro_orbit_direction = 0 - micro_orbit_direction;
+            if(micro_orbit_direction == 0) micro_orbit_direction = 1;
+        }
+
+        micro_orbit_variation_timer = 24 + (g_val * 12) / 100;
+    }
+    
+    // Radius op basis van proximity
+    // bubble_weight_factor is al berekend hierboven (lijnen 772-775)
+    micro_orbit_radius = MICRO_ORBIT_BASE + 
+                        (((MICRO_ORBIT_MAX - MICRO_ORBIT_BASE) * bubble_weight_factor) / 100);
+    
+    // === UNIFIED RANGE SLIDERS (DRIFT-FREE!) ===
+    // No ADS/hipfire separation - unified control!
+    if(current_range == 0) range_slider = slider_close;       // Close/short range
+    else if(current_range == 1) range_slider = slider_medium;  // Medium range
+    else range_slider = slider_far;                            // Far/long range
+    
+    // Apply STRENGTH slider (master control) with drift-free scaling
+    // Slider 50 = 100% (neutral - preserves base!)
+    g_expected = apply_drift_free_scaling(100, slider_strength);
+    
+    // Apply RANGE slider modulation (also drift-free!)
+    g_expected = apply_drift_free_scaling(g_expected, range_slider);
+    
+    if(g_expected > 200) g_expected = 200;  // Clamp max
+    if(g_expected < 0) g_expected = 0;      // Clamp min
+    
+    // Apply multiplier to orbit radius
+    micro_orbit_radius = (micro_orbit_radius * g_expected) / 100;
+    micro_orbit_radius = (micro_orbit_radius * weapon_gain_rotation_mix) / 100;
+
+    g_total = clamp_i(lock_confidence, 0, 100);
+    g_val = 80 + (g_total * 40) / 100;
+    micro_orbit_radius = (micro_orbit_radius * g_val) / 100;
+
+    g_temp = clamp_i(enemy_speed_mag, 0, 160);
+    g_expected = 120 - (g_temp * 20) / 160;
+    if(g_expected < 60) g_expected = 60;
+    micro_orbit_radius = (micro_orbit_radius * g_expected) / 100;
+    
+    if(micro_orbit_radius < 4) micro_orbit_radius = 4;
+    
+    // Direct gebruik van index (0-15) - GEEN integer division drift!
+    g_temp = micro_orbit_index;
+    
+    // 16-POINT CIRCLE LOOKUP (22.5° increments) - SMOOTH!
+    if(g_temp == 0){        // 0° = right
+        virtual_strafe_x = micro_orbit_radius;
+        virtual_strafe_y = 0;
+    }
+    else if(g_temp == 1){   // 22.5° 
+        virtual_strafe_x = (micro_orbit_radius * 92) / 100;
+        virtual_strafe_y = (micro_orbit_radius * 38) / 100;
+    }
+    else if(g_temp == 2){   // 45°
+        virtual_strafe_x = (micro_orbit_radius * 71) / 100;
+        virtual_strafe_y = (micro_orbit_radius * 71) / 100;
+    }
+    else if(g_temp == 3){   // 67.5°
+        virtual_strafe_x = (micro_orbit_radius * 38) / 100;
+        virtual_strafe_y = (micro_orbit_radius * 92) / 100;
+    }
+    else if(g_temp == 4){   // 90° = up
+        virtual_strafe_x = 0;
+        virtual_strafe_y = micro_orbit_radius;
+    }
+    else if(g_temp == 5){   // 112.5°
+        virtual_strafe_x = 0 - ((micro_orbit_radius * 38) / 100);
+        virtual_strafe_y = (micro_orbit_radius * 92) / 100;
+    }
+    else if(g_temp == 6){   // 135°
+        virtual_strafe_x = 0 - ((micro_orbit_radius * 71) / 100);
+        virtual_strafe_y = (micro_orbit_radius * 71) / 100;
+    }
+    else if(g_temp == 7){   // 157.5°
+        virtual_strafe_x = 0 - ((micro_orbit_radius * 92) / 100);
+        virtual_strafe_y = (micro_orbit_radius * 38) / 100;
+    }
+    else if(g_temp == 8){   // 180° = left
+        virtual_strafe_x = 0 - micro_orbit_radius;
+        virtual_strafe_y = 0;
+    }
+    else if(g_temp == 9){   // 202.5°
+        virtual_strafe_x = 0 - ((micro_orbit_radius * 92) / 100);
+        virtual_strafe_y = 0 - ((micro_orbit_radius * 38) / 100);
+    }
+    else if(g_temp == 10){  // 225°
+        virtual_strafe_x = 0 - ((micro_orbit_radius * 71) / 100);
+        virtual_strafe_y = 0 - ((micro_orbit_radius * 71) / 100);
+    }
+    else if(g_temp == 11){  // 247.5°
+        virtual_strafe_x = 0 - ((micro_orbit_radius * 38) / 100);
+        virtual_strafe_y = 0 - ((micro_orbit_radius * 92) / 100);
+    }
+    else if(g_temp == 12){  // 270° = down
+        virtual_strafe_x = 0;
+        virtual_strafe_y = 0 - micro_orbit_radius;
+    }
+    else if(g_temp == 13){  // 292.5°
+        virtual_strafe_x = (micro_orbit_radius * 38) / 100;
+        virtual_strafe_y = 0 - ((micro_orbit_radius * 92) / 100);
+    }
+    else if(g_temp == 14){  // 315°
+        virtual_strafe_x = (micro_orbit_radius * 71) / 100;
+        virtual_strafe_y = 0 - ((micro_orbit_radius * 71) / 100);
+    }
+    else {                  // 337.5°
+        virtual_strafe_x = (micro_orbit_radius * 92) / 100;
+        virtual_strafe_y = 0 - ((micro_orbit_radius * 38) / 100);
+    }
+    
+    // === STAP 3: ROTATION GATE GUARANTEE ===
+    // Magnetic multiplier is AL toegepast in radius berekening (regel 823)!
+    // GEEN extra scaling meer - anders dubbel effect!
+    
+    // ROTATION GATE GUARANTEE: minimum 11 units voor rotation_active!
+    g_total = abs(virtual_strafe_x) + abs(virtual_strafe_y);
+    
+    if(g_total > 0 && g_total < 11){
+        // Boost naar 11 units (>10 gate threshold)
+        virtual_strafe_x = (virtual_strafe_x * 11) / g_total;
+        virtual_strafe_y = (virtual_strafe_y * 11) / g_total;
+    }
+    
+    // === STAP 4: VERTICAL CLAMP (PREVENT GROUND-PULL BUG!) ===
+    if(virtual_strafe_y > VERTICAL_CLAMP_MAX) virtual_strafe_y = VERTICAL_CLAMP_MAX;
+    if(virtual_strafe_y < -VERTICAL_CLAMP_MAX) virtual_strafe_y = -VERTICAL_CLAMP_MAX;
+    
+    // Final caps
+    if(virtual_strafe_x > 15) virtual_strafe_x = 15;
+    if(virtual_strafe_x < -15) virtual_strafe_x = -15;
+}
+
+// ============== DRIFT-FREE SCALING (REDESIGNED!) ==============
+// CRITICAL: Slider 50 = 100% (NEUTRAL - preserves base values!)
+// 0 = 0%, 50 = 100%, 100 = 200%
+// This prevents drift: both ADS and hipfire scale RELATIVE to tuned bases
+
+// ============== DRIFT-FREE SCALING (REDESIGNED!) ==============
+// CRITICAL: Slider 50 = 100% (NEUTRAL - preserves base values!)
+// 0 = 0%, 50 = 100%, 100 = 200%
+// This prevents drift: both ADS and hipfire scale RELATIVE to tuned bases
+
+function apply_drift_free_scaling(base, slider_val){
+    if(slider_val == 0) return 0;  // Disabled
+
+    // Slider 50 = 100% (neutral!)
+    if(slider_val <= 50){
+        g_val = slider_val * 2;  // 0→50 maps to 0→100%
+    }
+    else {
+        g_val = 100 + ((slider_val - 50) * 2);  // 51→100 maps to 102→200%
+    }
+    
+    return (base * g_val) / 100;
+}
+
+function waveform_seed(seed){
+    if(seed == 0) seed = 1;
+    waveform_rng_state = seed & 0x7FFF;
+    if(waveform_rng_state == 0) waveform_rng_state = 12345;
+}
+
+function waveform_rand(){
+    waveform_rng_state = (waveform_rng_state * 214013 + 2531011) & 0x7FFF;
+    return waveform_rng_state;
+}
+
+function waveform_rand_range(min_val, max_val){
+    if(max_val <= min_val) return min_val;
+    // Gebruik globals g_total (span) en g_fill (rnd) i.v.m. GPC beperkingen
+    g_total = max_val - min_val + 1; // span
+    g_fill = waveform_rand() % g_total; // rnd
+    return min_val + g_fill;
+}
+
+function waveform_rand_signed(range_val){
+    if(range_val <= 0) return 0;
+    return waveform_rand_range(0, range_val * 2) - range_val;
+}
+
+function update_weapon_profile_detection(){
+    weapon_detect_score[WEAPON_PROFILE_AR] = 45;
+    weapon_detect_score[WEAPON_PROFILE_ONESHOT] = 12;
+    weapon_detect_score[WEAPON_PROFILE_SNIPER] = 12;
+
+    if(ads){
+        weapon_detect_score[WEAPON_PROFILE_AR] = weapon_detect_score[WEAPON_PROFILE_AR] + 20;
+        weapon_detect_score[WEAPON_PROFILE_SNIPER] = weapon_detect_score[WEAPON_PROFILE_SNIPER] + 10;
+    }
+    if(oneshot_mode){
+        weapon_detect_score[WEAPON_PROFILE_ONESHOT] = weapon_detect_score[WEAPON_PROFILE_ONESHOT] + 55;
+    }
+    if(sniper_mode){
+        weapon_detect_score[WEAPON_PROFILE_SNIPER] = weapon_detect_score[WEAPON_PROFILE_SNIPER] + 60;
+    }
+    if(hipfire_sticky_active){
+        weapon_detect_score[WEAPON_PROFILE_ONESHOT] = weapon_detect_score[WEAPON_PROFILE_ONESHOT] + 18;
+    }
+    if(aerial_mode){
+        weapon_detect_score[WEAPON_PROFILE_ONESHOT] = weapon_detect_score[WEAPON_PROFILE_ONESHOT] + 12;
+        weapon_detect_score[WEAPON_PROFILE_SNIPER] = weapon_detect_score[WEAPON_PROFILE_SNIPER] + 8;
+    }
+    if(hyper_burst_active){
+        weapon_detect_score[WEAPON_PROFILE_ONESHOT] = weapon_detect_score[WEAPON_PROFILE_ONESHOT] + 10;
+    }
+    if(distance_pixels >= BUBBLE_ZONE_FAR){
+        weapon_detect_score[WEAPON_PROFILE_SNIPER] = weapon_detect_score[WEAPON_PROFILE_SNIPER] + 12;
+    } else if(distance_pixels <= BUBBLE_ZONE_CLOSE){
+        weapon_detect_score[WEAPON_PROFILE_ONESHOT] = weapon_detect_score[WEAPON_PROFILE_ONESHOT] + 10;
+    }
+
+    if(shot_interval > 0){
+        if(shot_interval <= WEAPON_AR_TIME){
+            weapon_detect_score[WEAPON_PROFILE_AR] = weapon_detect_score[WEAPON_PROFILE_AR] + 22;
+        } else if(shot_interval >= WEAPON_SNIPER_TIME){
+            weapon_detect_score[WEAPON_PROFILE_SNIPER] = weapon_detect_score[WEON_PROFILE_SNIPER] + 22;
+        } else if(shot_interval >= WEAPON_SHOTGUN_TIME){
+            weapon_detect_score[WEAPON_PROFILE_ONESHOT] = weapon_detect_score[WEAPON_PROFILE_ONESHOT] + 24;
+        }
+    }
+
+    if(ads && shot_timer > 0 && shot_timer <= WEAPON_QUICK_SCOPE){
+        weapon_detect_score[WEAPON_PROFILE_SNIPER] = weapon_detect_score[WEAPON_PROFILE_SNIPER] + 15;
+    }
+
+    g_total = 0;
+    while(g_total < WEAPON_PROFILE_COUNT){
+        weapon_detect_score[g_total] = clamp_i(weapon_detect_score[g_total], 0, 100);
+        weapon_profile_confidence[g_total] = smooth_gain(weapon_profile_confidence[g_total], weapon_detect_score[g_total], 30);
+        g_total = g_total + 1;
+    }
+
+    g_val = weapon_profile_target;
+    if(g_val < 0 || g_val >= WEAPON_PROFILE_COUNT){
+        g_val = WEAPON_PROFILE_AR;
+    }
+    g_temp = weapon_profile_confidence[g_val];
+
+    g_total = 0;
+    while(g_total < WEAPON_PROFILE_COUNT){
+        if(weapon_profile_confidence[g_total] > g_temp + 6){
+            g_val = g_total;
+            g_temp = weapon_profile_confidence[g_total];
+        }
+        g_total = g_total + 1;
+    }
+
+    weapon_profile_target = g_val;
+}
+
+function toggle_subsystem(mask){
+    subsystem_flags = subsystem_flags ^ mask;
+}
+
+function diagnostics_record(){
+    if(!diag_enabled) return;
+    diag_timer = diag_timer + delta;
+    if(diag_timer < DIAG_CAPTURE_INTERVAL) return;
+    diag_timer = 0;
+    diag_distance_log[diag_index] = distance_pixels;
+    diag_lock_log[diag_index] = lock_confidence;
+    diag_slowdown_log[diag_index] = slowdown_factor;
+    diag_rotation_log[diag_index] = assist_rotation_blend;
+    diag_snap_log[diag_index] = assist_snap_blend;
+    diag_rotation_gap_log[diag_index] = rotation_gap_current;
+    diag_orbit_interval_log[diag_index] = micro_orbit_interval_ms;
+    diag_flags_log[diag_index] = subsystem_flags;
+    diag_index = diag_index + 1;
+    if(diag_index >= DIAG_BUFFER_SIZE) diag_index = 0;
+    if(diag_count < DIAG_BUFFER_SIZE) diag_count = diag_count + 1;
+}
+
+function diagnostics_dump(){
+    if(!diag_enabled){
+        // printf("Diagnostics: disabled\n"); // GPC Compatibility Fix
+        return;
+    }
+    if(diag_count == 0){
+        // printf("Diagnostics: buffer empty\n"); // GPC Compatibility Fix
+        return;
+    }
+    g_val = diag_index; // idx
+    g_temp = diag_count; // remaining
+    while(g_temp > 0){
+        g_val = g_val - 1;
+        if(g_val < 0) g_val = DIAG_BUFFER_SIZE - 1;
+        // GPC Compatibility Fix: Removed complex formatted printf call for diagnostics dump.
+        g_temp = g_temp - 1;
+    }
+}
+
+function get_zone_slider_value(zone){
+    if(zone <= 1) return slider_close;
+    if(zone == 2) return slider_medium;
+    return slider_far;
+}
+
+function update_sticky_edge_weight(){
+    if(sticky_edge_flip_timer > 0){
+        sticky_edge_flip_timer = sticky_edge_flip_timer - delta;
+        if(sticky_edge_flip_timer < 0) sticky_edge_flip_timer = 0;
+    }
+    if(sticky_edge_timer > 0 && !sticky_edge_active){
+        sticky_edge_timer = sticky_edge_timer - delta;
+        if(sticky_edge_timer < 0) sticky_edge_timer = 0;
+    }
+
+    sticky_edge_weight = 0;
+    if(distance_pixels > bubble_zone_edges[4] + STICKY_EDGE_MARGIN){
+        sticky_edge_recent_sign = 0;
+        if(sticky_edge_flip_timer == 0){
+            sticky_edge_flip_count = 0;
+        }
+        sticky_edge_active = 0;
+        sticky_edge_boost = 0;
+        sticky_edge_snap_boost = 0;
+        return;
+    }
+
+    g_temp = 0;
+    while(g_temp < 5){
+        g_val = bubble_zone_edges[g_temp];
+        g_p = distance_pixels - g_val;
+        if(g_p < 0) g_p = 0 - g_p;
+        if(g_p <= STICKY_EDGE_MARGIN){
+            sticky_edge_weight = 100 - ((g_p * 100) / STICKY_EDGE_MARGIN);
+            break;
+        }
+        g_temp = g_temp + 1;
+    }
+
+    if(sticky_edge_weight == 0 && distance_pixels <= STICKY_EDGE_MARGIN){
+        sticky_edge_weight = 100 - ((distance_pixels * 100) / STICKY_EDGE_MARGIN);
+    }
+    if(sticky_edge_weight < 0) sticky_edge_weight = 0;
+    if(sticky_edge_weight > 100) sticky_edge_weight = 100;
+
+    g_expected = 0; // current_sign
+    if(distance_delta > 1) g_expected = 1;
+    else if(distance_delta < -1) g_expected = -1;
+
+    if(sticky_edge_weight >= 50 && g_expected != 0){
+        if(g_expected != sticky_edge_recent_sign){
+            if(sticky_edge_flip_timer == 0){
+                sticky_edge_flip_count = 1;
+            } else {
+                sticky_edge_flip_count = sticky_edge_flip_count + 1;
+                if(sticky_edge_flip_count > 4) sticky_edge_flip_count = 4;
+            }
+            sticky_edge_flip_timer = 140;
+            sticky_edge_recent_sign = current_sign;
+        } else if(sticky_edge_flip_timer == 0){
+            sticky_edge_flip_count = clamp_i(sticky_edge_flip_count - 1, 0, 4);
+        }
+    } else if(sticky_edge_weight < 25){
+        if(sticky_edge_flip_timer == 0){
+            sticky_edge_flip_count = 0;
+            sticky_edge_recent_sign = 0;
+        }
+    }
+
+    if(sticky_edge_flip_timer == 0 && sticky_edge_flip_count > 0){
+        sticky_edge_flip_count = clamp_i(sticky_edge_flip_count - 1, 0, 4);
+    }
+
+    sticky_edge_active = (sticky_edge_weight >= 55 && sticky_edge_flip_count >= 2);
+    if(sticky_edge_active){
+        sticky_edge_timer = sticky_edge_timer + delta;
+        if(sticky_edge_timer > 220) sticky_edge_timer = 220;
+    }
+
+    g_tboost = 0; // ramp_pct
+    if(sticky_edge_timer > 0){
+        g_tboost = (sticky_edge_timer * 100) / 160;
+        if(g_tboost > 100) g_tboost = 100;
+    }
+
+    g_val = 30 + (sticky_edge_flip_count * 12); // flip_scale, using g_val 
+    sticky_edge_boost = (sticky_edge_weight * g_val * g_tboost) / 10000;
+    sticky_edge_boost = clamp_i(sticky_edge_boost, 12, 60);
+
+    g_temp = 40 + (sticky_edge_flip_count * 15); // snap_scale, using g_temp
+    sticky_edge_snap_boost = (sticky_edge_weight * g_temp * g_tboost) / 10000;
+    sticky_edge_snap_boost = clamp_i(sticky_edge_snap_boost, 10, 70);
+
+    if(!sticky_edge_active){
+        sticky_edge_boost = (sticky_edge_weight * STICKY_EDGE_GAIN) / 120;
+        sticky_edge_snap_boost = (sticky_edge_weight * STICKY_EDGE_SNAP_GAIN) / 120;
+    }
+}
+
+// ============== INPUT VELOCITY TRACKER (ADAPTIVE!) ==============
+// Measure how fast USER is moving stick (not Fortnite's output!)
+// Fast input = corrections → disable resistance (vrije beweging)
+// Slow input = tracking → enable resistance (sticky)
+function update_input_velocity(){
+    // Re-read FRESH rx/ry values to ensure current frame data
+    g_val = get_val(AXIS_RX);
+    g_temp = get_val(AXIS_RY);
+    
+    // Apply deadzone
+    if(abs(g_val) < DEADZONE_BASE) g_val = 0;
+    if(abs(g_temp) < DEADZONE_BASE) g_temp = 0;
+    
+    // Calculate raw input delta (absolute change per frame)
+    input_velocity = abs(g_val - prev_rx) + abs(g_temp - prev_ry);
+    
+    // Store current for next frame
+    prev_rx = g_val;
+    prev_ry = g_temp;
+
+    if(input_velocity >= FREEDOM_RELEASE_THRESHOLD){
+        freedom_release_timer = FREEDOM_RELEASE_RECOVER;
+    }
+
+    if(freedom_release_timer > 0){
+        freedom_release_timer = freedom_release_timer - delta;
+        if(freedom_release_timer < 0) freedom_release_timer = 0;
+    }
+
+    freedom_release_active = (freedom_release_timer > 0);
+    if(freedom_release_active){
+        freedom_release_target = 100;
+    } else {
+        freedom_release_target = 0;
+    }
+    
+    // 🚨 PANIC MODE: Instant disable at extreme speeds (360 flicks, super-fast tracking)
+    if(input_velocity >= INPUT_VELOCITY_PANIC){
+        resistance_active = 0;  // FULL DISABLE - zero interference!
+        return;
+    }
+    
+    // CRITICAL: Only allow resistance INSIDE bubble when locked!
+    // This prevents "magnetic repulsion" during target acquisition
+    // Check BOTH lock status AND true pixel distance (not processed stick values!)
+    if(!target_locked || distance_pixels > STICK_RESISTANCE_THRESHOLD){
+        resistance_active = 0;  // FORCE DISABLE outside bubble!
+        return;
+    }
+    
+    // Additional safety: if we somehow got here with large distance, force disable
+    if(distance_pixels > 20){
+        resistance_active = 0;
+        return;
+    }
+    
+    // ✅ DUAL-THRESHOLD HYSTERESIS (Architect approved!)
+    // ENABLE threshold (low) vs DISABLE threshold (also low) creates smooth buffer
+    // FAST thresholds for instant override
+    g_val = INPUT_VELOCITY_ENABLE_HIP;      // 15 units - enable assist
+    g_temp = INPUT_VELOCITY_DISABLE_HIP;    // 8 units - disable assist
+    g_tboost = INPUT_VELOCITY_FAST_HIP;     // 65 units - instant disable
+    
+    if(ads){
+        g_val = INPUT_VELOCITY_ENABLE_ADS;   // 20 units
+        g_temp = INPUT_VELOCITY_DISABLE_ADS; // 12 units
+        g_tboost = INPUT_VELOCITY_FAST_ADS;  // 70 units
+    }
+    
+    // Check for FAST movement first - instant disable
+    if(input_velocity >= g_tboost){
+        velocity_hysteresis_active = 0;
+        resistance_active = 0;
+        return;
+    }
+    
+    // Hysteresis state machine
+    if(velocity_hysteresis_active){
+        // Currently active - disable if velocity drops BELOW disable threshold
+        if(input_velocity < g_temp){
+            velocity_hysteresis_active = 0;
+            resistance_active = 0;
+        }
+        else {
+            resistance_active = 1;  // Keep active
+        }
+    }
+    else {
+        // Currently disabled - enable if velocity drops BELOW enable threshold
+        if(input_velocity < g_val){
+            velocity_hysteresis_active = 1;
+            resistance_active = 1;
+        }
+    }
+}
+
+// ============== ROTATION PULSE CORE (PRIMARY MAGNETIC!) ==============
+// Dit is de KERN: left-stick bursts triggeren Fortnite's rotation assist
+// Slider controls: 0=OFF, slider scaling 0-200%
+function calculate_pulse_magnitude(){
+    pulse_magnitude = 0;
+    rotation_mag_offset = 0;
+    
+    if(slider_strength == 0) {
+        return;
+    }
+    
+    g_temp = apply_drift_free_scaling(2, slider_strength);
+    
+    pulse_magnitude = g_temp;
+    if(pulse_magnitude > 0){
+        pulse_magnitude = (pulse_magnitude * weapon_gain_rotation_mix) / 100;
+    }
+    if(pulse_magnitude < 1 && slider_strength > 0) pulse_magnitude = 1;
+    if(pulse_magnitude > 6) pulse_magnitude = 6;
+    
+    if(pulse_magnitude > 0){
+        g_val = clamp_i(100 - slider_smoothness, 0, 100); // jitter_scale
+        g_temp = clamp_i(100 - lock_confidence, 0, 100);  // lock_gap
+        g_val = (g_val * g_temp) / 100;
+        if(g_val > 0){
+            g_p = (ROTATION_MAG_JITTER * (25 + g_val)) / 100; // mag_window
+            if(g_p < 1 && g_val > 15) g_p = 1;
+            if(g_p > 3) g_p = 3;
+            rotation_mag_offset = waveform_rand_signed(g_p);
+            if(rotation_mag_offset != 0){
+                pulse_magnitude = pulse_magnitude + rotation_mag_offset;
+                if(pulse_magnitude < 1) pulse_magnitude = 1;
+                if(pulse_magnitude > 6) pulse_magnitude = 6;
+            }
+        }
+    }
+    
+    if(input_velocity > 20) {
+        pulse_magnitude = 0;
+        rotation_mag_offset = 0;
+    }
+    
+    if(input_velocity >= INPUT_VELOCITY_PANIC){
+        pulse_magnitude = 0;
+        rotation_mag_offset = 0;
+        return;
+    }
+    
+    if(!resistance_active){
+        pulse_magnitude = pulse_magnitude / 2;
+        if(pulse_magnitude < 1) pulse_magnitude = 1;
+    }
+}
+
+// ============== CIRCULAR MAGNETIC AIM (AGGRESSIVE!) ==============
+// LEFT-STICK circular movements = constant rotational assist!
+// GEEN tegensturen - triggert Fortnite's native assist via movement
+function update_rotation_pulse(){
+    rotation_pulse_lx = 0;
+    rotation_pulse_ly = 0;
+    
+    if(!(subsystem_flags & SUBSYSTEM_ROTATION)){
+        rotation_pulse_timer = 0;
+        return;
+    }
+    
+    // CORE GATES (strict but simple)
+    // 1. Target must be locked (bubble active)
+    if(!target_locked) { 
+        rotation_pulse_timer = 0;  // Reset timer on lock loss
+        return; 
+    }
+    
+    // 2. Lock confidence must be high enough
+    if(lock_strength < ROTATION_PULSE_LOCK_MIN) { 
+        rotation_pulse_timer = 0;
+        return; 
+    }
+    
+    // 3. Slider must enable feature (0=disabled)
+    if(slider_strength == 0 || pulse_magnitude == 0) { 
+        return; 
+    }
+    
+    // 4. Not in build/edit mode
+    if(build_mode || edit_mode) { 
+        return; 
+    }
+    
+    // 5. ✅ STRAFE GATE (UE 5.5 ARCHITECT-APPROVED!)
+    // Rotation ONLY activates with ADS + strafe (like Epic's system)
+    // This makes it feel natural - rotation triggers during aim strafing
+    if(ads){
+        // ADS mode: minimale strafe vereist (VERLAAGD voor betere sticky!)
+        if(abs(lx) < 6 && abs(ly) < 6){
+            // Zelfs zonder strafe TOCH minimale rotation (10% van normaal)
+            rotation_pulse_timer = 0;
+            pulse_magnitude = pulse_magnitude / 10;
+            // NO return - blijft actief met minimale kracht!
+        }
+    }
+    else {
+        // Hipfire: reduced rotation pulse (30% kracht voor balans)
+        pulse_magnitude = (pulse_magnitude * 30) / 100;
+        // NO return - blijft actief met gereduceerde kracht!
+    }
+    
+    // ALL GATES PASSED - pulse is active!
+    
+    // Timer management - SMOOTHNESS SLIDER CONTROL + jitter
+    if(rotation_pulse_timer <= 0) {
+        g_val = 50 + slider_smoothness;
+        rotation_gap_dynamic = ROTATION_GAP_MAX - ((ROTATION_GAP_MAX - ROTATION_GAP_MIN) * clamp_i(lock_confidence, 0, 100)) / 100;
+        if(rotation_gap_dynamic < ROTATION_GAP_MIN) rotation_gap_dynamic = ROTATION_GAP_MIN;
+        g_temp = (g_val * 60 + rotation_gap_dynamic * 40) / 100;
+        if(g_temp < ROTATION_GAP_MIN) g_temp = ROTATION_GAP_MIN;
+        if(g_temp > ROTATION_GAP_MAX) g_temp = ROTATION_GAP_MAX;
+
+        rotation_gap_current = g_temp;
+        g_total = clamp_i(100 - slider_smoothness, 0, 100);
+        g_chars = clamp_i(100 - lock_confidence, 0, 100);
+        g_fill = (ROTATION_JITTER_MAX_MS * (g_total + g_chars)) / 200;
+        if(enemy_speed_mag > 60){
+            g_fill = g_fill + ((enemy_speed_mag - 60) * ROTATION_JITTER_MAX_MS) / 200;
+        }
+        if(g_fill > ROTATION_JITTER_MAX_MS) g_fill = ROTATION_JITTER_MAX_MS;
+        if(g_fill < 0) g_fill = 0;
+        if(g_fill < 1 && (g_total > 10 || g_chars > 10)){
+            g_fill = 1;
+        }
+        if(g_fill > 0){
+            rotation_gap_current = rotation_gap_current + waveform_rand_signed(g_fill);
+            if(rotation_gap_current < ROTATION_GAP_MIN) rotation_gap_current = ROTATION_GAP_MIN;
+            if(rotation_gap_current > ROTATION_GAP_MAX) rotation_gap_current = ROTATION_GAP_MAX;
+        }
+
+        rotation_jitter_interval = rotation_gap_current;
+        rotation_jitter_timer = rotation_jitter_interval;
+        
+        rotation_pulse_angle = rotation_pulse_angle + 90;
+        if(rotation_pulse_angle >= 360) rotation_pulse_angle = 0;
+        rotation_pulse_timer = rotation_gap_current;
+    } else if(rotation_jitter_timer > 0){
+        rotation_jitter_timer = rotation_jitter_timer - 4;
+        if(rotation_jitter_timer < 0) rotation_jitter_timer = 0;
+    }
+    
+    // Generate circular movement (AGGRESSIVE MAGNETIC!)
+    // LEFT-STICK cirkels = constant rotational assist trigger
+    if(rotation_pulse_angle == 0) {
+        rotation_pulse_lx = 0 - pulse_magnitude;  // LEFT
+        rotation_pulse_ly = 0;
+    }
+    else if(rotation_pulse_angle == 90) {
+        rotation_pulse_lx = 0;
+        rotation_pulse_ly = 0 - pulse_magnitude;  // UP
+    }
+    else if(rotation_pulse_angle == 180) {
+        rotation_pulse_lx = pulse_magnitude;      // RIGHT
+        rotation_pulse_ly = 0;
+    }
+    else {
+        rotation_pulse_lx = 0;
+        rotation_pulse_ly = pulse_magnitude;      // DOWN
+    }
+
+    if(enemy_speed_mag > 15 && lock_confidence > 40){
+        rotation_bias_x = (enemy_dir_x * slider_rotation) / 400;
+        rotation_bias_y = (enemy_dir_y * slider_rotation) / 400;
+        rotation_bias_x = clamp_i(rotation_bias_x, -4, 4);
+        rotation_bias_y = clamp_i(rotation_bias_y, -4, 4);
+        rotation_pulse_lx = clamp_i(rotation_pulse_lx + rotation_bias_x, -6, 6);
+        rotation_pulse_ly = clamp_i(rotation_pulse_ly + rotation_bias_y, -6, 6);
+    }
+    
+    // Count down timer
+    rotation_pulse_timer = rotation_pulse_timer - 4;  // 4ms per frame
+}
+
+// ============== SAVE SLIDERS =======================
+function save_sliders(){
+    set_pvar(SPVAR_1, slider_strength);
+    set_pvar(SPVAR_2, slider_smoothness);
+    set_pvar(SPVAR_3, slider_rotation);
+    set_pvar(SPVAR_4, slider_close);
+    set_pvar(SPVAR_5, slider_medium);
+    set_pvar(SPVAR_6, slider_far);
+    set_pvar(SPVAR_7, slider_trick);
+    set_pvar(SPVAR_8, slider_deadzone);
+}
+
+// ============== LOAD SLIDERS (RELOAD AFTER SAVE!) =======================
+function load_sliders(){
+    slider_strength = get_pvar(SPVAR_1, 0, 100, 50);
+    slider_smoothness = get_pvar(SPVAR_2, 0, 100, 50);
+    slider_rotation = get_pvar(SPVAR_3, 0, 100, 50);
+    slider_close = get_pvar(SPVAR_4, 0, 100, 50);
+    slider_medium = get_pvar(SPVAR_5, 0, 100, 50);
+    slider_far = get_pvar(SPVAR_6, 0, 100, 50);
+    slider_trick = get_pvar(SPVAR_7, 0, 100, 50);
+    slider_deadzone = get_pvar(SPVAR_8, 0, 100, 50);
+}
+
+// =================== BITMAP DRAWING (PANDA AIM METHOD) ====================
+int __pictureWidth, __pictureX, __pictureHeight, __pictureY, __pictureBit, __pictureOffset, __pictureData;
+int __pictureX2, __pictureY2;
+function draw_picture(x, y) {
+    __pictureOffset = 1;
+    __pictureBit = 0;
+    __pictureWidth = zendaddy_logo[0];
+    __pictureHeight = zendaddy_logo[1];
+    for (__pictureY = 0; __pictureY < __pictureHeight; __pictureY++) {
+        __pictureY2 = y + __pictureY;
+        if (__pictureY2 < 0 || __pictureY2 >= 64) {
+            __pictureY2 -= 64;
+        }
+        for (__pictureX = 0; __pictureX < __pictureWidth; __pictureX++) {
+            if (!__pictureBit) {
+                __pictureBit = 16;
+                __pictureOffset++;
+                __pictureData = zendaddy_logo[__pictureOffset];
+            }
+            __pictureBit--;
+            __pictureX2 = x + __pictureX;
+            if (__pictureX2 < 0 || __pictureX2 >= 128) {
+                __pictureX2 -= 128;
+            }
+            pixel_oled(__pictureX2, __pictureY2, test_bit(__pictureData, __pictureBit));
+        }
+    }
+}
+
+// =================== OLED: SPLASH ====================
+function splash_draw(){
+    cls_oled(1);  // WHITE background - shows black outline!
+    
+    // BIGGER ZENDADDY Logo - 120x64 pixels (25% larger!)
+    // X=(128-120)/2=4 (centered), Y=0 (top)
+    draw_picture(4, 0);
+}
+
+// =============== OLED MENU =========================
+function render_menu(){
+    if(active_func==0) g_val = slider_strength;
+    else if(active_func==1) g_val = slider_smoothness;
+    else if(active_func==2) g_val = slider_rotation;
+    else if(active_func==3) g_val = slider_close;
+    else if(active_func==4) g_val = slider_medium;
+    else if(active_func==5) g_val = slider_far;
+    else if(active_func==6) g_val = slider_trick;
+    else g_val = slider_deadzone;
+    
+    cls_oled(0);
+    
+    // SLIDER TITEL - GECENTREERD (9px per char incl spacing!)
+    if(active_func==0){
+        // STRENGTH (8 chars)
+        putc_oled(1,83);putc_oled(2,84);putc_oled(3,82);putc_oled(4,69);
+        putc_oled(5,78);putc_oled(6,71);putc_oled(7,84);putc_oled(8,72);
+        g_chars = 8;
+    }
+    else if(active_func==1){
+        // SMOOTHNESS (10 chars)
+        putc_oled(1,83);putc_oled(2,77);putc_oled(3,79);putc_oled(4,79);
+        putc_oled(5,84);putc_oled(6,72);putc_oled(7,78);putc_oled(8,69);
+        putc_oled(9,83);putc_oled(10,83);
+        g_chars = 10;
+    }
+    else if(active_func==2){
+        // ROTATION (8 chars)
+        putc_oled(1,82);putc_oled(2,79);putc_oled(3,84);putc_oled(4,65);
+        putc_oled(5,84);putc_oled(6,73);putc_oled(7,79);putc_oled(8,78);
+        g_chars = 8;
+    }
+    else if(active_func==3){
+        // CLOSE (5 chars)
+        putc_oled(1,67);putc_oled(2,76);putc_oled(3,79);putc_oled(4,83);putc_oled(5,69);
+        g_chars = 5;
+    }
+    else if(active_func==4){
+        // MEDIUM (6 chars)
+        putc_oled(1,77);putc_oled(2,69);putc_oled(3,68);putc_oled(4,73);
+        putc_oled(5,85);putc_oled(6,77);
+        g_chars = 6;
+    }
+    else if(active_func==5){
+        // FAR (3 chars)
+        putc_oled(1,70);putc_oled(2,65);putc_oled(3,82);
+        g_chars = 3;
+    }
+    else if(active_func==6){
+        // TRICK (5 chars)
+        putc_oled(1,84);putc_oled(2,82);putc_oled(3,73);putc_oled(4,67);putc_oled(5,75);
+        g_chars = 5;
+    }
+    else {
+        // DEADZONE (8 chars)
+        putc_oled(1,68);putc_oled(2,69);putc_oled(3,65);putc_oled(4,68);
+        putc_oled(5,90);putc_oled(6,79);putc_oled(7,78);putc_oled(8,69);
+        g_chars = 8;
+    }
+    
+    // FONT=1 (MEDIUM) is 11px breed volgens officiële docs!
+    g_temp = (128 - (g_chars * 11)) / 2;
+    
+    // TITEL: Y=2 (font 18px + bold 1px = 19px, centered in ruimte boven)
+    puts_oled(g_temp, 2, 1, g_chars, 1);
+    puts_oled(g_temp, 3, 1, g_chars, 1);  // Bold
+    
+    // BAR: Y=24-43 (20px hoog, outline 2px, gelijke spacing boven/onder)
+    rect_oled(12, 24, 104, 2, 1, 1);   // Top outline
+    rect_oled(12, 42, 104, 2, 1, 1);   // Bottom outline
+    rect_oled(12, 24, 2, 20, 1, 1);    // Left outline
+    rect_oled(114, 24, 2, 20, 1, 1);   // Right outline
+    
+    // 10 BLOCKS: 8x12px, 2px spacing, Y=28 (binnen bar)
+    g_fill = (g_val * 10) / 100;
+    g_temp = (g_val * 10) % 100;
+    
+    g_chars = 0;
+    while(g_chars < 10){
+        g_expected = 16 + (g_chars * 10);
+        
+        if(g_chars < g_fill){
+            rect_oled(g_expected, 28, 8, 12, 1, 1);
+        }
+        else if(g_chars == g_fill && g_temp > 0){
+            g_p = (g_temp * 8) / 100;
+            if(g_p > 0){
+                rect_oled(g_expected, 28, g_p, 12, 1, 1);
+            }
+        }
+        g_chars = g_chars + 1;
+    }
+    
+    // PERCENTAGE: Y=45 (gelijke spacing onder bar, past binnen 64px!)
+    if(g_val == 100){
+        putc_oled(1,49);putc_oled(2,48);putc_oled(3,48);putc_oled(4,37);
+        g_temp = (128 - (4 * 11)) / 2;
+        puts_oled(g_temp, 45, 1, 4, 1);
+        puts_oled(g_temp, 46, 1, 4, 1);
+    }
+    else if(g_val >= 10){
+        putc_oled(1,48+(g_val/10));putc_oled(2,48+(g_val%10));putc_oled(3,37);
+        g_temp = (128 - (3 * 11)) / 2;
+        puts_oled(g_temp, 45, 1, 3, 1);
+        puts_oled(g_temp, 46, 1, 3, 1);
+    }
+    else {
+        putc_oled(1,48+g_val);putc_oled(2,37);
+        g_temp = (128 - (2 * 11)) / 2;
+        puts_oled(g_temp, 45, 1, 2, 1);
+        puts_oled(g_temp, 46, 1, 2, 1);
+    }
+    
+    // LED indicators
+    set_led(LED_1,0); set_led(LED_2,0); set_led(LED_3,0); set_led(LED_4,0);
+    if(active_func <= 1) set_led(LED_1,1);
+    else if(active_func <= 3) set_led(LED_2,1);
+    else if(active_func <= 6) set_led(LED_3,1);
+    else set_led(LED_4,1);
+}
+
+// ============== AIM ASSIST CORE =====================
+function ultimate_master(){
+    hipfire_resistance_bonus = 0;
+    micro_x = 0; // Reset micro variables
+    micro_y = 0;
+    // 🔴 HARD STOP: DISABLE IN BUILD/EDIT MODE
+    if(build_mode || edit_mode){
+        combo_stop(UltimateMaster);  // Stop combo explicitly!
+        return;  // Exit immediately - zero processing!
+    }
+    
+    // ===== v2.0 IDLE & MOVEMENT TRACKING =====
+    // --- PHASE F: IDLE & MOVEMENT TRACKING (ANTI-DETECTION JITTER) ---
+    // Recalculates intervals based on slider/smoothness and regenerates timers.
+    g_val = clamp_i(100 - slider_smoothness, 0, 100); // Inverse smoothness for stealth factor
+
+    // Update idle pull interval
+    if(idle_timer >= idle_pull_interval){
+        g_temp = (STEALTH_IDLE_JITTER * g_val) / 100;
+        idle_pull_interval = IDLE_AUTO_PULL_TIME + waveform_rand_signed(g_temp);
+        if(idle_pull_interval < 60) idle_pull_interval = 60;
+    }
+
+    // Track camera input voor idle auto-pull
+    if(abs(rx) > 5 || abs(ry) > 5){
+        idle_timer = 0;  // Reset bij camera movement
+    } else {
+        if(idle_timer < idle_pull_interval) idle_timer = idle_timer + delta;
+    }
+    
+    // Update movement gate interval
+    if(movement_timer >= movement_gate_interval){
+        g_temp = (STEALTH_MOVEMENT_JITTER * g_val) / 100;
+        movement_gate_interval = MOVEMENT_GATE_TIME + waveform_rand_signed(g_temp);
+        if(movement_gate_interval < 80) movement_gate_interval = 80;
+    }
+
+    // Track movement input (V-Sync)
+    if(abs(lx) > 10 || abs(ly) > 10){
+        if(movement_timer < movement_gate_interval) movement_timer = movement_timer + delta;
+    } else {
+        movement_timer = 0;  // Reset zonder movement
+    }
+    // -----------------------------------------------------------------
+    
+    // ===== NIEUWE SCREEN-SPACE SYSTEMS! =====
+    update_screen_space();
+    update_weighted_zones();
+    update_assist_amplification();  // ASSIST AMPLIFICATION - work WITH Fortnite's assist!
+    update_rotation_gate();
+    update_predictive_aim_legacy();
+    
+    // Oude systems
+    update_bubble_state();
+    get_current_range();
+    update_target_lock();
+    update_strafe_detection();
+    update_input_velocity();
+    freedom_release_blend = smooth_gain(freedom_release_blend, freedom_release_target, 12);
+    update_assist_core();
+    detect_assist_state();
+    update_weapon_profile();
+    apply_weapon_profile_scaling();
+    apply_recoil_modulation(); // Apply recoil modulation after scaling
+    update_sticky_edge_weight();
+    // Using g_chars for distance_delta_abs to remove local variable declaration
+    g_chars = distance_delta; 
+    if(g_chars < 0) g_chars = 0 - g_chars;
+    if(freedom_release_blend > 0 || !target_locked){
+        resistance_glue_active = 0;
+        resistance_glue_timer = 0;
+        resistance_glue_gain = 0;
+    } else if(resistance_glue_active){
+        if(input_velocity > 18 || aim_error_variance > 18 || g_chars > 8 || lock_confidence < 60){
+            resistance_glue_active = 0;
+            resistance_glue_timer = 0;
+            resistance_glue_gain = 0;
+        } else {
+            resistance_glue_timer = resistance_glue_timer + delta;
+            if(resistance_glue_timer > 450) resistance_glue_timer = 450;
+            resistance_glue_gain = (resistance_glue_timer * 28) / 450;
+            if(resistance_glue_gain > 28) resistance_glue_gain = 28;
+        }
+    } else if(lock_confidence >= 72 && aim_error_avg <= 8 && g_chars <= 4 && input_velocity <= 12){
+        resistance_glue_active = 1;
+        resistance_glue_timer = 120;
+        resistance_glue_gain = 12;
+    }
+    zone_blend_pct = soft_step(distance_pixels, bubble_zone_edges[0], bubble_zone_edges[4]);
+    calculate_pulse_magnitude();  // SMOOTH MAGNITUDE - slider-based!
+    update_rotation_pulse();      // ROTATION TRIGGER PULSE - magnetic aim!
+    
+        // ========= SLOWDOWN BLENDING =========
+    slowdown_factor = 100;
+    zone_index = bubble_zone - 1;
+    if(zone_index < 0) zone_index = 0;
+    if(zone_index > 4) zone_index = 4;
+
+    base_slowdown = slowdown_zone_map[zone_index];
+    base_slowdown = (base_slowdown * weapon_gain_slowdown_mix) / 100;
+    base_slowdown = clamp_i(base_slowdown, 10, 100);
+
+
+    if(lock_confidence > 0){
+        assist_slowdown_blend = smooth_gain(assist_slowdown_blend, assist_core_blend, 16);
+        if(input_velocity >= INPUT_VELOCITY_PANIC){
+            assist_slowdown_blend = assist_slowdown_blend / 3;
+        }
+        if(hyper_burst_active){
+            slowdown_factor = HYPER_BURST_SLOWDOWN;
+        } else {
+            slowdown_factor = lerp_pct(100, base_slowdown, assist_slowdown_blend);
+            slowdown_factor = lerp_pct(slowdown_factor, base_slowdown / 2, zone_blend_pct);
+            if(ads && bubble_zone > 0){
+                slowdown_factor = (slowdown_factor * ADS_SLOWDOWN_FACTOR) / 100;
+                slowdown_factor = (slowdown_factor * weapon_gain_ads_slowdown_mix) / 100;
+            }
+            if(current_range == 0) range_slider = slider_close;
+            else if(current_range == 1) range_slider = slider_medium;
+            else range_slider = slider_far;
+            slowdown_factor = apply_drift_free_scaling(slowdown_factor, range_slider);
+            slowdown_factor = apply_drift_free_scaling(slowdown_factor, slider_rotation);
+        }
+    }
+    else {
+        slowdown_factor = lerp_pct(100, base_slowdown, assist_last_proximity_score / 2);
+    }
+
+    if(sticky_edge_weight > 0){
+        g_expected = sticky_edge_boost; // slowdown_edge_gain
+        g_val = sticky_edge_boost / 2;  // rotation_edge_gain
+        g_temp = sticky_edge_snap_boost; // snap_edge_gain
+
+        if(!sticky_edge_active){
+            g_expected = (sticky_edge_weight * STICKY_EDGE_GAIN) / 100;
+            g_val = g_expected / 2;
+            g_temp = (sticky_edge_weight * STICKY_EDGE_SNAP_GAIN) / 100;
+        }
+
+        g_fill = clamp_i(100 + g_expected, 90, 150);
+        slowdown_factor = (slowdown_factor * g_fill) / 100;
+
+        assist_rotation_blend = clamp_i(assist_rotation_blend + g_val, 0, 100);
+        assist_snap_blend = clamp_i(assist_snap_blend + g_temp, 0, 100);
+    } else {
+        if(sticky_edge_timer > 0){
+            sticky_edge_timer = sticky_edge_timer - (delta * 2);
+            if(sticky_edge_timer < 0) sticky_edge_timer = 0;
+        }
+    }
+
+    if(hipfire_sticky_active && !ads && oneshot_mode){
+        hipfire_sticky_weight = HIP_STICKY_INTENSITY_BASE;
+        hipfire_sticky_weight = clamp_i(hipfire_sticky_weight + (lock_confidence / 2), 0, 100);
+        hipfire_sticky_weight = apply_drift_free_scaling(hipfire_sticky_weight, slider_strength);
+        if(hipfire_sticky_weight > 100) hipfire_sticky_weight = 100;
+
+        if(subsystem_flags & SUBSYSTEM_SLOWDOWN){
+            slowdown_factor = lerp_pct(slowdown_factor, HIP_STICKY_SLOWDOWN_TARGET, hipfire_sticky_weight);
+        }
+        if(subsystem_flags & SUBSYSTEM_ROTATION){
+            assist_rotation_blend = clamp_i(assist_rotation_blend + ((HIP_STICKY_ROTATION_BONUS * hipfire_sticky_weight) / 100), 0, 100);
+        }
+        if(subsystem_flags & SUBSYSTEM_SNAP){
+            assist_snap_blend = clamp_i(assist_snap_blend + ((HIP_STICKY_SNAP_BONUS * hipfire_sticky_weight) / 100), 0, 100);
+        }
+        if(subsystem_flags & SUBSYSTEM_RESISTANCE){
+            hipfire_resistance_bonus = (HIP_STICKY_RESIST_GAIN * hipfire_sticky_weight) / 100;
+            if(hipfire_resistance_bonus > 60) hipfire_resistance_bonus = 60;
+        }
+    }
+
+    if(!(subsystem_flags & SUBSYSTEM_SLOWDOWN)){
+        slowdown_factor = 100;
+    }
+
+    if(freedom_release_blend > 0){
+        g_val = (FREEDOM_RELEASE_SLOWDOWN * freedom_release_blend) / 100; // release_slow_pct
+        g_temp = (FREEDOM_RELEASE_ROTATION * freedom_release_blend) / 100; // release_rot_pct
+        g_p = (FREEDOM_RELEASE_SNAP * freedom_release_blend) / 100; // release_snap_pct
+        if(g_val > 100) g_val = 100;
+        if(g_temp > 100) g_temp = 100;
+        if(g_p > 100) g_p = 100;
+        slowdown_factor = lerp_pct(slowdown_factor, 100, g_val);
+        assist_slowdown_blend = (assist_slowdown_blend * (100 - g_val)) / 100;
+        assist_rotation_blend = (assist_rotation_blend * (100 - g_temp)) / 100;
+        assist_snap_blend = (assist_snap_blend * (100 - g_p)) / 100;
+        if(assist_slowdown_blend < 0) assist_slowdown_blend = 0;
+        if(assist_rotation_blend < 0) assist_rotation_blend = 0;
+        if(assist_snap_blend < 0) assist_snap_blend = 0;
+    }
+
+    g_temp = clamp_i(enemy_speed_mag, 0, 160);
+    g_expected = SPEED_DYNAMIC_MAX - ((SPEED_DYNAMIC_MAX - SPEED_DYNAMIC_MIN) * g_temp) / 160;
+    if(g_expected < SPEED_DYNAMIC_MIN) g_expected = SPEED_DYNAMIC_MIN;
+    if(g_expected > SPEED_DYNAMIC_MAX) g_expected = SPEED_DYNAMIC_MAX;
+    slowdown_factor = (slowdown_factor * g_expected) / 100;
+    
+    stabilized_rx = (rx * slowdown_factor) / 100;
+    stabilized_ry = (ry * slowdown_factor) / 100;
+    
+    // DAMPING CURVE - voorkom zero-crossing wobble
+    if(target_locked && input_mag <= LOCK_THRESHOLD){
+        // Als we dicht bij center zijn, extra damping
+        if(abs(stabilized_rx) <= DAMPING_THRESHOLD){
+            stabilized_rx = (stabilized_rx * DAMPING_FACTOR) / 100;  // 45% damping
+        }
+        if(abs(stabilized_ry) <= DAMPING_THRESHOLD){
+            stabilized_ry = (stabilized_ry * DAMPING_FACTOR) / 100;  // 45% damping
+        }
+    }
+    
+    // ========= ROTATION PULL (VEEL ZWAKKER!) =========
+    rotation_x = 0;
+    rotation_y = 0;
+    
+    // Rotation ALLEEN bij CONFIRMED tracking (zeer strikt!)
+    
+    if((subsystem_flags & SUBSYSTEM_ROTATION) && assist_rotation_blend > 0 && bubble_zone_stable > 0){
+        g_temp = rotation_pull_hip_map[clamp_i(bubble_zone - 1, 0, 3)];
+        if(ads) g_temp = rotation_pull_ads_map[clamp_i(bubble_zone - 1, 0, 3)];
+
+        rotation_factor = (g_temp * (50 + assist_rotation_blend)) / 100;
+        rotation_factor = (rotation_factor * weapon_gain_rotation_mix) / 100;
+        if(ads){
+            rotation_factor = (rotation_factor * weapon_gain_ads_rotation_mix) / 100;
+        }
+        rotation_factor = clamp_i(rotation_factor, 4, 40);
+        rotation_factor = (rotation_factor * 5) / 2;
+
+        g_temp = (0 - stabilized_rx) * assist_rotation_blend;
+        rotation_x = g_temp / (rotation_factor * 20);
+        g_temp = (0 - stabilized_ry) * assist_rotation_blend;
+        rotation_y = g_temp / (rotation_factor * 20);
+
+        rotation_x = clamp_i(rotation_x, -12, 12);
+        rotation_y = clamp_i(rotation_y, -10, 10);
+
+        if(idle_timer >= IDLE_AUTO_PULL_TIME && movement_timer >= MOVEMENT_GATE_TIME &&
+           (r2_assist_timer >= 150 || r2_assist_fade_timer > 0) && !hyper_burst_active && !flick_detected){
+            g_temp = (AUTO_PULL_STRENGTH * assist_core_blend * weapon_gain_autopull_mix) / 10000;
+            g_temp = (g_temp * aim_state_auto_pull_pct) / 100;
+            g_temp = clamp_i(g_temp, 0, 150);
+            auto_pull_x = ((0 - stabilized_rx) * g_temp) / 100;
+            auto_pull_y = ((0 - stabilized_ry) * g_temp) / 100;
+            rotation_x = rotation_x + auto_pull_x;
+            rotation_y = rotation_y + auto_pull_y;
+        }
+
+        if(sticky_edge_weight > 0){
+            rotation_x = (rotation_x * (100 + STICKY_EDGE_GAIN)) / 100;
+            rotation_y = (rotation_y * (100 + STICKY_EDGE_GAIN)) / 100;
+        }
+        if(freedom_release_active){
+            rotation_x = (rotation_x * (100 - FREEDOM_RELEASE_ROTATION)) / 100;
+            rotation_y = (rotation_y * (100 - FREEDOM_RELEASE_ROTATION)) / 100;
+        }
+        rotation_x = clamp_i(rotation_x, -15, 15);
+        rotation_y = clamp_i(rotation_y, -12, 12);
+        
+        stabilized_rx = stabilized_rx + rotation_x;
+        stabilized_ry = stabilized_ry + rotation_y;
+    }
+    else {
+        snap_ramp_timer = 0;
+    }
+    
+    // ========= v2.0 PROGRESSIVE SNAP (150ms delay!) =========
+    snap_x = 0;
+    snap_y = 0;
+    
+    // DELAY-AWARE: snap alleen actief NA 150ms delay (sync met Fortnite delayed tracking)
+    if((subsystem_flags & SUBSYSTEM_SNAP) && target_locked && lock_strength >= SNAP_MIN_LOCK && bubble_zone_stable > 0 && bubble_zone_stable <= 3 && r2_assist_timer >= 150){
+        // HYPER-BURST snap!
+        if(hyper_burst_active){
+            snap_factor = HYPER_BURST_SNAP;  // 60px mega snap!
+            snap_ramp_timer = SNAP_RAMP_TIME;  // Instant max
+        }
+        // ONE-SHOT krijgt INSTANT ramp!
+        else if(oneshot_mode){
+        if(bubble_zone_stable == 1) snap_factor = SNAP_STRENGTH_ULTRA;
+        else if(bubble_zone_stable == 2) snap_factor = SNAP_STRENGTH_CLOSE;
+        else snap_factor = SNAP_STRENGTH_MEDIUM;
+            snap_ramp_timer = SNAP_RAMP_TIME;  // Instant max
+        }
+        // v2.0 PROGRESSIVE RAMP (natuurlijk gevoel!)
+        else {
+            // Basis strength op zone
+            if(bubble_zone == 1) snap_factor = SNAP_STRENGTH_ULTRA;
+            else if(bubble_zone == 2) snap_factor = SNAP_STRENGTH_CLOSE;
+            else snap_factor = SNAP_STRENGTH_MEDIUM;
+            
+            // Progressive ramp-up (120ms smooth)
+            if(snap_ramp_timer < SNAP_RAMP_TIME){
+                snap_ramp_timer = snap_ramp_timer + delta;
+                // Quadratic ease-in voor natuurlijk gevoel
+                ramp_pct = (snap_ramp_timer * 100) / SNAP_RAMP_TIME;
+                ramp_pct = (ramp_pct * ramp_pct) / 100;  // Square voor ease
+                snap_factor = (snap_factor * ramp_pct) / 100;
+            }
+            
+            snap_factor = (snap_factor * (50 + range_slider)) / 100;
+        }
+        snap_factor = (snap_factor * weapon_gain_snap_mix) / 100;
+        if(snap_factor > 220) snap_factor = 220;
+        if(snap_factor < 10) snap_factor = 10;
+        }
+        
+        g_val = bubble_outer_radius - bubble_inner_radius;
+        if(g_val < 1) g_val = 1;
+        g_temp = distance_pixels - bubble_inner_radius;
+        if(g_temp < 0) g_temp = 0;
+        if(g_temp > g_val) g_temp = g_val;
+        g_expected = (g_temp * 100) / g_val;
+        snap_stage = 0;
+        if(g_expected >= SNAP_STAGE_TWO) snap_stage = 2;
+        else if(g_expected >= SNAP_STAGE_ONE) snap_stage = 1;
+
+        if(snap_stage == 1){
+            snap_factor = (snap_factor * 120) / 100;
+        }
+        else if(snap_stage == 2){
+            snap_factor = (snap_factor * 150) / 100;
+        }
+        
+        if(sticky_edge_weight > 0){
+            snap_factor = (snap_factor * (100 + STICKY_EDGE_SNAP_GAIN)) / 100;
+        }
+        if(freedom_release_active){
+            snap_factor = (snap_factor * (100 - FREEDOM_RELEASE_SNAP)) / 100;
+        }
+
+        snap_x = ((0 - stabilized_rx) * lock_strength) / 100;
+        snap_y = ((0 - stabilized_ry) * lock_strength) / 100;
+        
+        if(sticky_edge_weight > 0){
+            snap_x = (snap_x * (100 + STICKY_EDGE_SNAP_GAIN)) / 100;
+            snap_y = (snap_y * (100 + STICKY_EDGE_SNAP_GAIN)) / 100;
+        }
+        if(freedom_release_active){
+            snap_x = (snap_x * (100 - FREEDOM_RELEASE_SNAP)) / 100;
+            snap_y = (snap_y * (100 - FREEDOM_RELEASE_SNAP)) / 100;
+        }
+        
+        if(snap_x > snap_factor) snap_x = snap_factor;
+        if(snap_x < 0 - snap_factor) snap_x = 0 - snap_factor;
+        if(snap_y > snap_factor) snap_y = snap_factor;
+        if(snap_y < 0 - snap_factor) snap_y = 0 - snap_factor;
+        
+        stabilized_rx = stabilized_rx + snap_x;
+        stabilized_ry = stabilized_ry + snap_y;
+    }
+    
+    // ========= MICRO SEARCH =========
+    m_x = 0;
+    m_y = 0;
+    
+    if(!target_locked && bubble_zone == 0 && input_mag < MICRO_ACTIVE_THRESH){
+        g_temp = MICRO_RADIUS_SEARCH;
+        
+        // Deadzone slider gain (0=disabled/baseline, >0 → adjust)
+        if(slider_deadzone > 0){
+            g_temp = apply_drift_free_scaling(g_temp, slider_deadzone);  // Drift-free scaling
+        }
+        
+        micro_angle = micro_angle + MICRO_SPEED_SEARCH;
+        if(micro_angle >= 360) micro_angle = micro_angle - 360;
+        
+        // ✅ SMOOTH CIRCULAR MOTION - Lookup table instead of piecewise linear!
+        // Convert angle (0-360) to index (0-15)
+        g_val = (micro_angle * 16) / 360;
+        if(g_val > 15) g_val = 15;  // Safety clamp
+        
+        // Use lookup tables for smooth sin/cos
+        m_x = (g_temp * cosLUT[g_val]) / 100;
+        m_y = (g_temp * sinLUT[g_val]) / 100;
+    }
+    
+    // ========= AERIAL/TRICKSHOT BOOST =========
+    aerial_offset_y = 0;
+    
+    if(jumping || aerial_mode || trickshot_lock){
+        aerial_timer = aerial_timer + 1;
+        
+        if(trickshot_lock || (jumping && input_mag <= 50)){
+            if(!target_locked && input_mag <= 50){
+                target_locked = 1;
+                lock_timer = 10;
+            }
+            
+            if(target_locked){
+                snap_x = snap_x * 2;
+                snap_y = snap_y * 2;
+            }
+            
+            rotation_x = rotation_x * 2;
+            rotation_y = rotation_y * 2;
+            
+            fall_velocity = (aerial_timer * 15) / 10;
+            
+            if(shooting){
+                aerial_offset_y = (fall_velocity * 20) / 100;
+            }
+            else {
+                aerial_offset_y = (fall_velocity * 30) / 100;
+            }
+            
+            // Trickshot slider gain (0=disabled, >0 → boost)
+            if(slider_trick > 0){
+                g_trick_mult = 50 + slider_trick;  // 51-150% range
+                rotation_x = (rotation_x * g_trick_mult) / 100;
+                rotation_y = (rotation_y * g_trick_mult) / 100;
+                aerial_offset_y = (aerial_offset_y * g_trick_mult) / 100;
+            }
+        }
+    }
+    else {
+        aerial_timer = 0;
+        fall_velocity = 0;
+    }
+    
+    stabilized_ry = stabilized_ry + aerial_offset_y;
+    
+    // ========= TRICKSHOT BOOST (GATED!) =========
+    if(jumping && slider_trick > 0){
+        g_tboost = 50 + slider_trick;  // 51-150% range (slider 0=disabled)
+        stabilized_rx = (stabilized_rx * g_tboost) / 100;
+        stabilized_ry = (stabilized_ry * g_tboost) / 100;
+    }
+    
+    // ========= PREDICTIVE LAZY AIM BIAS =========
+    // Add predictive bias voor off-target hits!
+    stabilized_rx = stabilized_rx + lazy_bias_x;
+    stabilized_ry = stabilized_ry + lazy_bias_y;
+    
+    // ========= STICK RESISTANCE CORE (V3.0 SUPER STICKY!) =========
+    // PRIMARY systeem: aggressive damping voor super sticky tracking
+    // Verbrede bubble (<25px ECHTE distance!) - perfecte sticky!
+    // ADAPTIVE: reduced resistance tijdens fast input (corrections)!
+    // MINDER GATED: werkt bij hogere velocity voor betere sticky!
+    
+    if((subsystem_flags & SUBSYSTEM_RESISTANCE) && slider_strength > 0 && target_locked && !build_mode && 
+       (resistance_active || distance_pixels < 15) && 
+       input_velocity < 25){  // SUPER STICKY: 213% verhoogd! (was 8 units)
+        // CRITICAL: Use REAL pixel distance, not processed stick output!
+        // Using stabilized_rx/ry was causing resistance outside bubble!
+        
+        // TIGHT BUBBLE ONLY: distance_pixels < STICK_RESISTANCE_THRESHOLD (15px)
+        if(distance_pixels < STICK_RESISTANCE_THRESHOLD){
+            // Base strength from slider using NEW system (0=disabled, 50=100%, 100=200%)
+            // Base strength from slider using NEW system (0=disabled, 50=100%, 100=200%)
+            g_expected = apply_drift_free_scaling(STICK_RESISTANCE_MAX, slider_strength);
+            g_expected = (g_expected * weapon_gain_resist_mix) / 100;
+
+            // SCALAR RESISTANCE: lock confidence, snap stage, and error stability
+            resistance_lock_scalar = clamp_i((lock_confidence * 120) / 100, 30, 100);
+            resistance_snap_scalar = clamp_i((snap_stage * 25), 50, 100);
+            resistance_error_scalar = 100 - soft_step(aim_error_avg, 5, 25);
+            resistance_error_scalar = clamp_i(resistance_error_scalar, 10, 100);
+
+            resistance_combined_pct = (resistance_lock_scalar * 40 + resistance_snap_scalar * 30 + resistance_error_scalar * 30) / 100;
+            resistance_combined_pct = clamp_i(resistance_combined_pct, 40, 120);
+
+            g_expected = (g_expected * resistance_combined_pct) / 100;
+            g_expected = g_expected + hipfire_resistance_bonus;
+            if(resistance_glue_active){
+                g_expected = g_expected + resistance_glue_gain;
+            }
+            g_expected = (g_expected * aim_state_resistance_pct) / 100;
+            if(g_expected > 90) g_expected = 90;
+            if(g_expected < 5) g_expected = 5;
+
+            // GRADUAL FADE: closer to center = stronger damping
+            // Distance 0 = 100% of strength, distance 15 = 0%
+            g_temp = (STICK_RESISTANCE_THRESHOLD - distance_pixels) * 100 / STICK_RESISTANCE_THRESHOLD;
+            g_expected = (g_expected * g_temp) / 100;
+            
+    // VELOCITY FADE: verbeterde gradient voor smoother sticky
+    // Enhanced transition voor perfecte sticky aim
+    g_temp = INPUT_VELOCITY_DISABLE_HIP;
+    if(ads) g_temp = INPUT_VELOCITY_DISABLE_ADS;
+    
+    if(input_velocity > 15){  // Start fading hoger voor langere sticky (was 10)
+        g_val = ((g_temp - input_velocity) * 100) / (g_temp - 10);
+        if(g_val < 0) g_val = 0;
+        g_val = clamp_i(g_val, 0, 100);
+        g_expected = (g_expected * g_val) / 100;
+    }
+    
+    // Apply smooth fading due to freedom release
+    if(freedom_release_blend > 0){
+        g_expected = (g_expected * (100 - freedom_release_blend)) / 100;
+    }
+
+    // Apply smooth damping (complement rotation pulse)
+    stabilized_rx = (stabilized_rx * (100 - g_expected)) / 100;
+    stabilized_ry = (stabilized_ry * (100 - g_expected)) / 100;
+        }
+        // Else: outside bubble - vrije acquisition (NO resistance!)
+    }
+    // Else: fast input detected - NO RESISTANCE (vrije correctie!)
+    
+    // ========= ADD DITHERING (PHASE F ANTI-DETECTION) =========
+    g_val = clamp_i(100 - slider_smoothness, 0, 100); // Jitter strength inverse to smoothness slider
+    g_temp = (g_val * 12) / 100; // Max dither +/- 12 units (if slider_smoothness = 0)
+    g_p = waveform_rand_signed(g_temp);
+    g_fill = waveform_rand_signed(g_temp);
+
+/* COMBINE & OUTPUT - ATOMIC FIX v3 (ULTRA ISOLATION) */
+    // Stage micro + dither additions into specialized temp globals
+    g_val = micro_x + g_p; // g_val = micro_x + dither_x
+    g_temp = micro_y + g_fill; // g_temp = micro_y + dither_y
+
+    // Step 1: Initialize final output with stabilized input
+    final_rx = stabilized_rx;
+    final_ry = stabilized_ry;
+
+    // Step 2: Apply horizontal additions
+    final_rx = final_rx + g_val; 
+
+    // Step 3: Apply vertical additions
+    final_ry = final_ry + g_temp;
+
+    g_total = abs(final_rx) + abs(final_ry);
+    if(g_total > 100){
+        final_rx = (final_rx * 100) / g_total;
+        final_ry = (final_ry * 100) / g_total;
+    }
+    
+    if(final_rx > 100) final_rx = 100;
+    if(final_rx < -100) final_rx = -100;
+    if(final_ry > 100) final_ry = 100;
+    if(final_ry < -100) final_ry = -100;
+    
+    diagnostics_record();
+    
+    // ========= LEFT STICK OUTPUT (ROTATION PULSE INJECTION!) =========
+    // Inject rotation trigger pulse into left stick
+    final_lx = lx + rotation_pulse_lx;
+    final_ly = ly + rotation_pulse_ly;
+    
+    // Clamp left stick
+    if(final_lx > 100) final_lx = 100;
+    if(final_lx < -100) final_lx = -100;
+    if(final_ly > 100) final_ly = 100;
+    if(final_ly < -100) final_ly = -100;
+    
+    // Output both sticks
+    set_val(AXIS_RX, final_rx);
+    set_val(AXIS_RY, final_ry);
+    set_val(LX, final_lx);
+    set_val(LY, final_ly);
+
+function toggle_aim_off() {
+    aim_on = 0;
+    combo_stop(UltimateMaster);
+    assist_pipeline_reset();
+}
+
+// ======================= COMBO =======================
+combo UltimateMaster { 
+    ultimate_master(); 
+    wait(4); 
+}

@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-matrix-black text-matrix-green antialiased font-hacker;
+    cursor: crosshair;
+    position: relative;
+    overflow-x: hidden;
+  }
+  
+  html {
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #00FF00, transparent);
+    animation: scanline 8s linear infinite;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-hacker uppercase tracking-widest;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+    font-weight: 800;
+  }
+  
+  h1 {
+    font-weight: 900;
+    letter-spacing: 0.2em;
+  }
+}
+
+@layer components {
+  /* Matrix Terminal Card */
+  .glass-card {
+    @apply bg-matrix-shadow/60 backdrop-blur-xl border border-matrix-green/30 rounded-none shadow-glow;
+    position: relative;
+  }
+
+  .glass-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid #00FF00;
+    opacity: 0.1;
+    pointer-events: none;
+  }
+
+  /* Matrix Button */
+  .btn-neon {
+    @apply bg-matrix-black border-2 border-matrix-green px-12 py-4 rounded-none font-hacker uppercase tracking-widest text-lg transition-all duration-300 shadow-matrix-glow hover:shadow-matrix-strong hover:bg-matrix-dark-green hover:-translate-y-1;
+    text-shadow: 0 0 10px #00FF00;
+  }
+
+  /* Matrix Glow Text */
+  .text-glow {
+    text-shadow: 0 0 20px rgba(0, 255, 0, 1), 0 0 40px rgba(0, 255, 0, 0.5);
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-green bg-clip-text text-transparent;
+  }
+  
+  .terminal-text {
+    font-family: 'Courier New', monospace;
+    color: #00FF00;
+    text-shadow: 0 0 5px #00FF00;
+  }
+}

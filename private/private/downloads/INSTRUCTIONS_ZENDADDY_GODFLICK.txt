@@ -1,0 +1,250 @@
+===================================================================================
+   ZENDADDY GOD FLICK V2.0 PRO - USER MANUAL
+===================================================================================
+
+This guide explains how to use the script, navigate the OLED menu, and what
+every setting does so you know exactly what to change.
+
+NEW IN V2.0:
+  - Per-stick, per-mode control: Each stick has separate ADS and HIP settings
+  - Pre-Aim Sticky: Extra stickiness when aiming without shooting (one-shot weapons)
+  - 23 settings across 5 pages with ADS/HIP sub-mode toggle
+  - Reset changed to R1+L1 (menu only) to prevent accidental resets
+
+-----------------------------------------------------------------------------------
+   PART 1: CONTROLLER SHORTCUTS
+-----------------------------------------------------------------------------------
+
+1. TURN ON SCRIPT
+   Hold [R1] and press [DPAD UP]
+   LED turns Green = Script is Active
+
+2. TURN OFF SCRIPT
+   Hold [R1] and press [DPAD DOWN]
+   LED turns Red = Script is Disabled (normal controller)
+
+3. OPEN SETTINGS MENU
+   Hold [L2] and press [OPTIONS]
+   The OLED screen switches to the settings menu
+
+4. CLOSE SETTINGS MENU
+   Hold [L2] and press [OPTIONS] again
+   Returns to the main HUD screen, settings are saved automatically
+
+5. TOGGLE TAPFIRE
+   Hold [R1] and press [DPAD LEFT]
+   Vibrates once = on, double vibrate = off
+
+6. TOUCHPAD FIX (Map)
+   Hold [OPTIONS] and press [L3]
+
+-----------------------------------------------------------------------------------
+   PART 2: MENU NAVIGATION
+-----------------------------------------------------------------------------------
+
+The menu has 5 pages. Pages 1 and 2 have an ADS/HIP sub-mode toggle.
+
+   UP / DOWN .......... Select which setting to change (arrow shows selection)
+   LEFT / RIGHT ....... Lower / Raise the selected value
+   L1 ................. Previous page
+   R1 ................. Next page
+   SQUARE ............. Toggle between ADS and HIP mode (pages 1-2 only)
+   R1 + L1 ........... Reset ALL settings to factory defaults (hold both)
+
+The bottom of the screen shows 5 dots - the filled dot shows which page
+you are on. A progress bar shows where your current value sits in its range.
+On pages 1-2, the header shows "ADS" or "HIP" and "SQ" reminds you that
+Square toggles the sub-mode.
+
+-----------------------------------------------------------------------------------
+   PART 3: SETTINGS GUIDE - WHAT EACH SETTING DOES
+-----------------------------------------------------------------------------------
+
+=== PAGE 1: L STICK [ADS / HIP mode] ===
+Controls the LEFT STICK rotation engine. Sends micro-movements on
+your left stick to trigger Fortnite's rotational aim assist.
+
+Press SQUARE to switch between ADS settings and HIP settings.
+Each mode has its own pattern, speed, and size - so you can use
+different settings when aiming down sights vs hip-firing.
+
+PTN - Pattern Type (Range: 0 - 5, Default ADS: CIR, Default HIP: CIR)
+   Choose the movement shape for the left stick.
+
+   0 = OFF - No micro-movements on this stick in this mode.
+   1 = CIR (Circle) - Smooth circular movement. Best all-round.
+   2 = DIA (Diamond) - Sharp diamond path. Stronger directional trigger.
+   3 = CRS (Cross) - Snaps between 4 directions. Most aggressive.
+   4 = FG8 (Figure-8) - Covers more area. Good for medium range.
+   5 = JIT (Jitter) - Pseudo-random. Most natural feeling.
+
+SPD - Pattern Speed (Range: 4 - 24, Default: 12)
+   How fast the pattern cycles.
+   Higher = faster cycle = more aggressive aim assist activation.
+   Lower  = slower cycle = smoother, less noticeable.
+
+SIZ - Pattern Size (Range: 5 - 40, Default: 19)
+   How strong the rotational pull is. This is the main "magnet" setting.
+   Higher = stronger pull towards enemies.
+   Lower  = subtler, more natural movement.
+   WARNING: Above 30 can cause visible screen movement.
+
+=== PAGE 2: R STICK [ADS / HIP mode] ===
+Controls the RIGHT STICK micro-movements that keep aim assist active.
+
+Press SQUARE to switch between ADS settings and HIP settings.
+R stick ADS defaults to CIR pattern, R stick HIP defaults to OFF.
+
+PTN - Pattern Type (Range: 0 - 5, Default ADS: CIR, Default HIP: OFF)
+   Same patterns as L stick. Set to OFF to disable R stick movement
+   in that mode.
+
+SPD - Pattern Speed (Range: 5 - 30, Default: 15)
+   How quickly the right-stick pattern cycles.
+   Lower = more snappy, better for close range.
+   Higher = more gradual, better for tracking at distance.
+
+SIZ - Pattern Size (Range: 0 - 30, Default ADS: 7, Default HIP: 7)
+   Strength of right-stick micro-movements.
+   During ADS without firing: runs at 1/3 strength to stay subtle.
+   During firing: full strength for tracking.
+   0 = No micro-movements.
+
+=== PAGE 3: DAMP ===
+Controls how sticky your aim feels. Lower values = more sticky/slow aim.
+
+ADS - ADS Dampening (Range: 10 - 100, Default: 60)
+   How much your aim slows down when holding L2 (aim down sights).
+   Lower = MORE slowdown = very sticky aim, crosshair barely moves.
+   Higher = LESS slowdown = fast aim, almost no stickiness.
+   IF YOU FEEL STUCK IN MUD: Raise to 70-80.
+   IF YOU OVERSHOOT TARGETS: Lower to 45-55.
+
+HIP - Hip Fire Speed (Range: 30 - 100, Default: 75)
+   Sensitivity when NOT aiming (hip fire / running around).
+   Lower = slower aim = more control in close fights.
+   Higher = faster aim = quicker 180 turns.
+
+TRN - Turn Threshold (Range: 50 - 100, Default: 85)
+   When your stick input is above this threshold, dampening is bypassed
+   completely so you can do fast turns without feeling stuck.
+   Lower = more dampening on fast turns.
+   Higher = dampening only on smaller movements.
+
+PRE - Pre-Aim Sticky (Range: 0 - 100, Default: 40)
+   >>> NEW IN V2.0 <<<
+   Extra slowdown when you are ADS (L2) but NOT firing (R2).
+   Perfect for one-shot weapons like shotguns, snipers, and bows.
+   
+   How it works: When you hold L2 to aim, your crosshair gets even
+   stickier than normal ADS dampening. The moment you start firing,
+   it switches back to normal ADS dampening + stick boost.
+   
+   0   = Off (same speed aiming and shooting)
+   20  = Light pre-aim sticky
+   40  = Default (noticeable sticky when lining up shots)
+   60  = Strong (very sticky pre-aim for precision weapons)
+   100 = Maximum (crosshair almost frozen when pre-aiming)
+   
+   EXAMPLE: With ADS=60 and PRE=40, your aim speed when pre-aiming
+   is 20% (60-40=20), but when you start shooting it goes back to
+   60%. This gives you time to lock on before pulling the trigger.
+
+=== PAGE 4: SYSTEM ===
+Controller and system settings. Only change these if needed.
+
+DZN - Deadzone (Range: 5 - 25, Default: 13)
+   Must match your in-game controller deadzone setting.
+   Fortnite deadzone 0.05 = set to 5
+   Fortnite deadzone 0.13 = set to 13
+   WRONG VALUE = stick drift or weak aim assist.
+
+DZR - Right Stick Deadzone (Range: 3 - 15, Default: 8)
+   Must match your in-game right stick deadzone setting.
+   WRONG VALUE = aim drift or sluggish aiming.
+
+TFD - Tap Fire Delay (Range: 10 - 60, Default: 30)
+   Time between automatic tap-fire shots (tenths of a second).
+   10 = 1 second (fast), 30 = 3 seconds (default), 60 = 6 seconds.
+
+=== PAGE 5: BOOST ===
+Advanced boost settings and per-stick randomness.
+
+TRK - Track Boost (Range: 0 - 30, Default: 0)
+   Increases rotation size while firing in ADS.
+   Triggers aim assist harder for stronger tracking while shooting.
+   START WITH 10-15 and go up from there.
+
+STK - Stick Boost (Range: 0 - 40, Default: 0)
+   Extra slowdown while shooting in ADS.
+   Makes crosshair heavier during fire for more aim assist control.
+   WARNING: Too high makes it hard to switch targets mid-fight.
+
+LRN - L Stick Randomness (Range: 0 - 20, Default: 0)
+   Adds random jitter on top of the left stick pattern.
+   Creates a dual-layer effect - pattern + random at once.
+   Applies to both ADS and HIP modes of the left stick.
+
+RRN - R Stick Randomness (Range: 0 - 20, Default: 0)
+   Adds random jitter on top of the right stick pattern.
+   Same as LRN but for the right stick independently.
+
+-----------------------------------------------------------------------------------
+   PART 4: QUICK TUNING TIPS
+-----------------------------------------------------------------------------------
+
+FOR STRONGER AIM ASSIST:
+   Raise L SIZ to 25-30 and R SIZ to 10-15.
+   Lower ADS to 45-50 for more stickiness.
+
+FOR MAXIMUM AUTO-TRACKING:
+   Set TRK to 15-20 and STK to 15-20.
+   Lower ADS to 50. Use CRS pattern on both sticks.
+
+FOR SHOTGUN / SNIPER (ONE-SHOT):
+   Set PRE to 50-70 for strong pre-aim sticky.
+   Use CIR pattern on L stick ADS, slower SPD (8-10).
+   Line up your shot with maximum stickiness, then fire.
+
+FOR CLOSE-RANGE SMG:
+   Lower SPD to 8-10 for faster snap.
+   Lower HIP to 50-60 for more control.
+   Set L HIP pattern to CRS for aggressive close-range tracking.
+
+FOR LONG-RANGE (AR/Sniper):
+   Raise SPD to 20-25 for smoother tracking.
+   Lower ADS to 40-50 for maximum stickiness.
+   Set STK to 15-20 for steady aim while shooting.
+
+DIFFERENT PATTERNS PER MODE:
+   Example: L stick ADS = CIR (smooth tracking when aiming)
+            L stick HIP = CRS (aggressive snap for hip fire fights)
+            R stick ADS = DIA (directional pull when aiming)
+            R stick HIP = OFF (no R stick movement during hip fire)
+
+IF YOUR CHARACTER WALKS BY ITSELF:
+   Raise DZN by 2-3 points.
+   Raise DZR by 1-2 points.
+
+-----------------------------------------------------------------------------------
+   PART 5: HOW TO RESET TO DEFAULTS
+-----------------------------------------------------------------------------------
+
+Open the menu (L2 + OPTIONS), then hold R1 + L1 together.
+All settings instantly reset to defaults. The screen shows "RESET OK!"
+and the controller vibrates to confirm. Settings are saved automatically.
+
+Default values:
+  L ADS: PTN=CIR, SPD=12, SIZ=19
+  L HIP: PTN=CIR, SPD=12, SIZ=19
+  R ADS: PTN=CIR, SPD=15, SIZ=7
+  R HIP: PTN=OFF, SPD=15, SIZ=7
+  DAMP: ADS=60, HIP=75, TRN=85, PRE=40
+  SYSTEM: DZN=13, DZR=8, TFD=30
+  BOOST: TRK=0, STK=0, LRN=0, RRN=0
+
+===================================================================================
+   NEED HELP?
+   Join our Discord: discord.gg/zp2HmEgTWq
+   Or DM us on TikTok: @zendaddy.pro
+===================================================================================

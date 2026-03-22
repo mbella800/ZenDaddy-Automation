@@ -1,0 +1,209 @@
+===================================================================================
+   ZENDADDY GOD FLICK V1.1 - USER MANUAL
+===================================================================================
+
+This guide explains how to use the script, navigate the OLED menu, and what
+every setting does so you know exactly what to change.
+
+-----------------------------------------------------------------------------------
+   PART 1: CONTROLLER SHORTCUTS
+-----------------------------------------------------------------------------------
+
+1. TURN ON SCRIPT
+   Hold [R1] and press [DPAD UP]
+   LED turns Green = Script is Active
+
+2. TURN OFF SCRIPT
+   Hold [R1] and press [DPAD DOWN]
+   LED turns Red = Script is Disabled (normal controller)
+
+3. OPEN SETTINGS MENU
+   Hold [L2] and press [OPTIONS]
+   The OLED screen switches to the settings menu
+
+4. CLOSE SETTINGS MENU
+   Hold [L2] and press [OPTIONS] again
+   Returns to the main HUD screen, settings are saved automatically
+
+-----------------------------------------------------------------------------------
+   PART 2: MENU NAVIGATION
+-----------------------------------------------------------------------------------
+
+The menu has 5 pages. Each page has 2-3 settings you can adjust.
+
+   UP / DOWN .......... Select which setting to change (arrow shows selection)
+   LEFT / RIGHT ....... Lower / Raise the selected value
+   L1 ................. Previous page
+   R1 ................. Next page
+   TRIANGLE ........... Reset ALL settings to factory defaults
+
+The bottom of the screen shows 5 dots - the filled dot shows which page
+you are on. A progress bar shows where your current value sits in its range.
+
+-----------------------------------------------------------------------------------
+   PART 3: SETTINGS GUIDE - WHAT EACH SETTING DOES
+-----------------------------------------------------------------------------------
+
+=== PAGE 1: SCAN ===
+Controls the rotational aim assist engine that activates Fortnite's tracking.
+
+ROT - Rotation Strength (Range: 5 - 40, Default: 19)
+   How strong the rotational pull is. This is the main "magnet feel" setting.
+   Higher = stronger pull towards enemies.
+   Lower  = subtler, more natural aim movement.
+   START HERE: If aim assist feels too weak, raise this first.
+   WARNING: Above 30 can cause visible screen movement.
+
+HLX - Helix Pattern (Range: 4 - 24, Default: 12)
+   Controls the circular movement pattern that triggers Fortnite's aim assist.
+   Higher = wider circle = activates aim assist at greater range from target.
+   Lower  = tighter circle = more precise but shorter range activation.
+   LEAVE AT DEFAULT unless you know what you are doing.
+
+SCN - Scan Speed (Range: 1 - 5, Default: 2)
+   How fast the aim assist engine ramps up to full strength.
+   1 = Very slow ramp (smooth but slow to kick in)
+   5 = Instant full strength (aggressive, may feel jerky)
+   RECOMMENDED: 2-3 for most players.
+
+=== PAGE 2: MAGNET ===
+Controls the magnetic stick effect - how your aim "locks" onto targets.
+
+MAG - Magnet Strength (Range: 0 - 30, Default: 7)
+   Extra pull force towards enemies when aim assist detects a target.
+   0  = No extra magnet (rely only on Fortnite's native assist)
+   30 = Maximum pull (very strong lock-on, can feel unnatural)
+   SWEET SPOT: 5-10 for balanced play.
+
+MSP - Magnet Speed (Range: 5 - 30, Default: 15)
+   How quickly the magnet effect kicks in after detecting a target.
+   5  = Very fast snap (instant lock)
+   30 = Slow gradual pull (smoother tracking)
+   LOWER = more snappy, better for flick shots.
+   HIGHER = more gradual, better for tracking moving targets.
+
+=== PAGE 3: SPEED ===
+Controls sensitivity dampening - how much the script slows your aim.
+
+ADS - ADS Dampening (Range: 10 - 100, Default: 60)
+   How much your aim slows down when you hold L2 (aim down sights).
+   Lower = MORE slowdown = very sticky aim, crosshair barely moves.
+   Higher = LESS slowdown = fast aim, almost no stickiness.
+   IF YOU FEEL STUCK IN MUD: Raise this to 70-80.
+   IF YOU OVERSHOOT TARGETS: Lower this to 45-55.
+
+HIP - Hip Fire Speed (Range: 30 - 100, Default: 75)
+   Sensitivity when NOT aiming (hip fire / running around).
+   Lower = slower hip fire aim = more control in close fights.
+   Higher = faster hip fire = quicker 180 turns.
+   MOST PLAYERS: Leave at 70-80.
+
+TRN - Turn Assist (Range: 50 - 100, Default: 85)
+   How fast you can turn around when making big stick movements.
+   50 = Heavy turn dampening (slow 180s but very controlled)
+   100 = No dampening (full speed turns, maximum responsiveness)
+   LOWER for more control, HIGHER for faster reactions.
+
+=== PAGE 4: SYSTEM ===
+Controller and system settings. Only change these if needed.
+
+DZN - Deadzone (Range: 5 - 25, Default: 13)
+   Must match your in-game controller deadzone setting.
+   Your Fortnite deadzone 0.05 = set this to 5
+   Your Fortnite deadzone 0.10 = set this to 10
+   Your Fortnite deadzone 0.13 = set this to 13
+   WRONG VALUE = stick drift or weak aim assist.
+
+DZR - Right Stick Deadzone (Range: 3 - 15, Default: 8)
+   Deadzone for your RIGHT stick (aim stick). Works the same as DZN but
+   only affects aiming, not movement.
+   Must match your in-game right stick deadzone setting.
+   Your Fortnite right deadzone 0.05 = set this to 5
+   Your Fortnite right deadzone 0.08 = set this to 8
+   WRONG VALUE = aim drift or sluggish aiming.
+
+TFD - Tap Fire Delay (Range: 10 - 60, Default: 30)
+   Time between automatic tap-fire shots, in tenths of a second.
+   10 = 1 second between shots (fast tap fire)
+   30 = 3 seconds between shots (default, controlled pace)
+   60 = 6 seconds between shots (very slow, deliberate)
+   LOWER for faster semi-auto fire (shotgun spam).
+   HIGHER for slow precision weapons (sniper, bow).
+
+=== PAGE 5: TRACK ===
+These settings boost aim assist while you are SHOOTING in ADS. They make
+the crosshair follow enemies more on its own. Default is 0 (off) so
+your current aim feel is unchanged until you turn these on.
+
+TRK - Track Boost (Range: 0 - 30, Default: 0)
+   Increases the rotation circle size while you are firing in ADS.
+   This triggers Fortnite's rotational aim assist harder, making the
+   crosshair pull towards enemies more aggressively while shooting.
+   0  = Off (normal rotation, same as before)
+   10 = Mild boost (slightly more pull while shooting)
+   20 = Strong boost (noticeable tracking improvement)
+   30 = Maximum (very aggressive pull, may feel unnatural)
+   START WITH 10-15 and go up from there.
+
+STK - Stick Boost (Range: 0 - 40, Default: 0)
+   Extra slowdown applied to your aim ONLY while shooting in ADS.
+   This makes your crosshair heavier/slower while firing, giving
+   Fortnite's aim assist more control to keep you on target.
+   0  = Off (no extra slowdown while shooting)
+   10 = Light slowdown (a bit stickier during fire)
+   20 = Medium (crosshair noticeably heavier while shooting)
+   40 = Maximum (very slow aim while firing, maximum stick)
+   WORKS BEST combined with TRK for full auto-tracking feel.
+   WARNING: Too high makes it hard to switch targets mid-fight.
+
+-----------------------------------------------------------------------------------
+   PART 4: QUICK TUNING TIPS
+-----------------------------------------------------------------------------------
+
+FOR STRONGER AIM ASSIST:
+   Raise ROT to 25-30 and MAG to 10-15.
+   Lower ADS to 45-50 for more stickiness.
+
+FOR MAXIMUM AUTO-TRACKING (crosshair follows enemy):
+   Set TRK to 15-20 and STK to 15-20.
+   Lower ADS to 50 for extra stickiness.
+   This gives the strongest "aimbot feel" within Fortnite's system.
+
+FOR MORE NATURAL / SUBTLE FEEL:
+   Keep ROT at 15-20 and MAG at 5-7.
+   Keep TRK and STK at 0.
+   Keep ADS at 60-70.
+
+FOR CLOSE-RANGE FIGHTS (Shotgun/SMG):
+   Lower MSP to 8-10 for faster snap.
+   Lower HIP to 50-60 for more control.
+   Set TRK to 10-15 for stronger tracking up close.
+
+FOR LONG-RANGE (AR/Sniper):
+   Raise MSP to 20-25 for smoother tracking.
+   Lower ADS to 40-50 for maximum stickiness at range.
+   Set STK to 15-20 for steady aim while shooting.
+
+IF YOUR CHARACTER WALKS BY ITSELF (Stick Drift):
+   Raise DZN by 2-3 points.
+   Raise DZR by 1-2 points.
+
+-----------------------------------------------------------------------------------
+   PART 5: HOW TO RESET TO DEFAULTS
+-----------------------------------------------------------------------------------
+
+OPTION 1 (EASY): Open the menu (L2 + OPTIONS), then press TRIANGLE.
+   All settings instantly reset to defaults. The screen shows "RESET OK!"
+   and the controller vibrates to confirm. Settings are saved automatically.
+
+OPTION 2: Re-flash the script to your Cronus Zen.
+   All saved settings will be cleared and defaults will load.
+
+Default values: ROT 19, HLX 12, SCN 2, MAG 7, MSP 15,
+ADS 60, HIP 75, TRN 85, DZN 13, DZR 8, TFD 30, TRK 0, STK 0.
+
+===================================================================================
+   NEED HELP?
+   Join our Discord: discord.gg/zp2HmEgTWq
+   Or DM us on TikTok: @zendaddy.pro
+===================================================================================
